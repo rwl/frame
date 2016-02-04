@@ -1,0 +1,7 @@
+name: frame
+dependencies:
+  collection: any
+  intl: any
+  option: any
+  quiver: any
+  test: any
