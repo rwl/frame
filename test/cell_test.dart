@@ -35,15 +35,13 @@ cellTest() {
       expect(new Value(NM), equals(NM));
       expect(new Value(2), equals(new Value(2)));
     });
-    /*
-    tnie() {
-      throw new UnimplementedError();
-    }
+
+    tnie() => throw new UnimplementedError();
 
     test("fold correctly", () {
       expect(new Value(1).fold(tnie, tnie, (x) => x + 1), equals(2));
-      expect(NA.fold(42, tnie, (x) => tnie()), equals(42));
-      expect(NM.fold(tnie, 42, (x) => tnie()), equals(42));
+      expect(NA.fold(() => 42, tnie, (x) => tnie()), equals(42));
+      expect(NM.fold(tnie, () => 42, (x) => tnie()), equals(42));
     });
 
     test("return value for getOrElse when Value", () {
@@ -105,7 +103,6 @@ cellTest() {
       expect(
           (NM as Cell<int>).zipMap(new Value(2), (a, b) => a + b), equals(NM));
     });
-     */
   });
 }
 

@@ -63,7 +63,7 @@ abstract class Cell<A extends Comparable> implements Comparable<Cell<A>> {
     * @see [[NA]]
     * @see [[NM]]
     */
-  bool isNonValue() => !isValue;
+  bool isNonValue() => !isValue();
 
   /** Return the [[Cell]]'s value.
     *
@@ -103,15 +103,15 @@ abstract class Cell<A extends Comparable> implements Comparable<Cell<A>> {
     * @param  nm  the expression to evaluate if the value in not meaningful.
     * @param  f   the function to apply to a value that is available and meaningful.
     */
-  B fold(na(), nm(), f(A a)) {
+  dynamic fold(na(), nm(), f(A a)) {
     if (this == NA) {
       return na();
     } else if (this == NM) {
       return nm();
-    } else {
-      var a = Value(this);
-      return f(a);
+    } else if (this is Value) {
+      return f(get());
     }
+    throw this;
   }
 
   /** Returns the [[Cell]]'s value if it is available and meaningful,
@@ -130,7 +130,7 @@ abstract class Cell<A extends Comparable> implements Comparable<Cell<A>> {
     * @see [[flatMap]]
     * @see [[foreach]]
     */
-  Cell<B> map(f(A a)) => isValue ? new Value(f(get())) : asInstanceOf[Cell];
+  Cell map(f(A a)) => isValue() ? new Value(f(get())) : this;
 
   /** Returns the result of applying `f` to this [[Cell]]'s value if
     * it is available and meaningful.
@@ -139,14 +139,13 @@ abstract class Cell<A extends Comparable> implements Comparable<Cell<A>> {
     * @see [[map]]
     * @see [[foreach]]
     */
-  Cell flatMap(Cell f(A a)) => isValue ? f(get()) : asInstanceOf[Cell];
+  Cell flatMap(Cell f(A a)) => isValue() ? f(get()) : this;
 
   /** Flatten a nested [[Cell]] with type `Cell[Cell<B>]` into `Cell<B>`.
     *
     * @note there must be implicit evident that `A` is a subtype of `Cell<B>`.
     */
-  Cell<B> flatten(/*A <:< Cell<B> ev*/) =>
-      isValue ? ev(get()) : asInstanceOf[Cell];
+  Cell flatten(/*A <:< Cell<B> ev*/) => isValue() ? get() : this;
 
   /** Returns this [[Cell]] unless it contains a value that is
     * available and meaningful ''and'' applying the predicate `p` to
@@ -156,7 +155,7 @@ abstract class Cell<A extends Comparable> implements Comparable<Cell<A>> {
     * @see [[filterNot]]
     * @see [[collect]]
     */
-  Cell<A> filter(bool p(A a)) => (isNonValue || p(get())) ? this : NA;
+  Cell<A> filter(bool p(A a)) => (isNonValue() || p(get())) ? this : NA;
 
   /** Returns this [[Cell]] unless it contains a value that is
     * available and meaningful ''and'' applying the predicate `p` to
@@ -166,7 +165,7 @@ abstract class Cell<A extends Comparable> implements Comparable<Cell<A>> {
     * @see [[filter]]
     * @see [[collect]]
     */
-  Cell<A> filterNot(bool p(A a)) => (isNonValue || !p(get())) ? this : NA;
+  Cell<A> filterNot(bool p(A a)) => (isNonValue() || !p(get())) ? this : NA;
 
   /** If this cell is a [[NonValue]] and `pf` is defined for it, then this
     * will return `Value(pf(this))`, otherwise it will return this cell as-is.
@@ -174,16 +173,14 @@ abstract class Cell<A extends Comparable> implements Comparable<Cell<A>> {
     * @param pf the partial function to map the non-value.
     * @see [[recoverWith]]
     */
-  Cell recover(PartialFunction<NonValue, A0> pf) {
+  Cell recover(PartialFunction pf) {
     if (this is NonValue) {
       var nonValue = this;
-      if (pf.isDefinedAt(nonValue)) {
+      if (pf.isDefinedOn(nonValue)) {
         return new Value(pf(nonValue));
       }
-    } else {
-      var value = this;
-      return false;
     }
+    return this;
   }
 
   /** If this cell is a [[NonValue]] and `pf` is defined for it, then this
@@ -192,16 +189,14 @@ abstract class Cell<A extends Comparable> implements Comparable<Cell<A>> {
     * @param pf the partial function to map the non-value.
     * @see [[recover]]
     */
-  Cell recoverWith(PartialFunction<NonValue, Cell> pf) {
+  Cell recoverWith(PartialFunction pf) {
     if (this == NonValue) {
       var nonValue = this;
-      if (pf.isDefinedAt(nonValue)) {
+      if (pf.isDefinedOn(nonValue)) {
         pf(nonValue);
       }
-    } else {
-      var value = this;
-      return value;
     }
+    return this;
   }
 
   /** Returns true if this [[Cell]]'s value is available and
@@ -229,8 +224,7 @@ abstract class Cell<A extends Comparable> implements Comparable<Cell<A>> {
     } else if (this == NM) {
       return false;
     } else {
-//      var a = new Value(a);
-      return p(a);
+      return p(this.get());
     }
   }
 
@@ -256,12 +250,11 @@ abstract class Cell<A extends Comparable> implements Comparable<Cell<A>> {
     * @see [[filter]]
     * @see [[filterNot]]
     */
-  Cell collect(PartialFunction<A, B> pf) {
+  Cell collect(PartialFunction pf) {
     if (this == NM) {
       return NM;
-    } else if (pf.isDefinedAt(a)) {
-//      var a = new Value(a);
-      return new Value(pf(a));
+    } else if (pf.isDefinedOn(get())) {
+      return new Value(pf(get()));
     } else {
       return NA;
     }
@@ -273,7 +266,7 @@ abstract class Cell<A extends Comparable> implements Comparable<Cell<A>> {
     * @param  alternative  the alternative expression
     * @see [[getOrElse]]
     */
-  Cell orElse(Cell<B> alternative) => isValue ? this : alternative;
+  Cell orElse(Cell alternative) => isValue() ? this : alternative;
 
   /** Project this [[Cell]] to an `Option`
     *
@@ -285,26 +278,29 @@ abstract class Cell<A extends Comparable> implements Comparable<Cell<A>> {
     * the empty list if the [[Cell]]'s value is unavailable or not
     * meaningful.
     */
-  List<A> toList() => isValue ? [get()] : [];
+  List<A> toList() => isValue() ? [get()] : [];
 
   /** If both `this` and `that` are values, then this returns a value derived
     * by applying `f` to the values of them. Otherwise, if either `this` or
     * `that` is `NA`, then `NA` is returned, otherwise `NM` is returned.
     */
-  Cell zipMap(Cell<B> that, f(A a, B b)) {
-//    (this, that) match {
-//    case (Value(a), Value(b)) => Value(f(a, b))
-//    case (NA, _) | (_, NA) => NA
-//    case _ => NM
+  Cell zipMap(Cell that, f(A a, b)) {
+    if (this is Value && that is Value) {
+      return new Value(f(this.get(), that.get()));
+    } else if (this == NA || that == NA) {
+      return NA;
+    } else {
+      return NM;
+    }
   }
 
 // TODO: there are currently issues where we get comparison between Value(NA) and NA and this should be true
 // the current tweaks to equality are just holdovers until we figure out some more details on the implementation
 // of non values.
 //object Cell extends CellInstances {
-  static Cell<A> value2(A x) => Value(x);
-  static Cell<A> notAvailable() => NA;
-  static Cell<A> notMeaningful() => NM;
+  ///  static Cell<A> value2(A x) => new Value(x);
+  static Cell notAvailable() => NA;
+  static Cell notMeaningful() => NM;
 
   factory Cell.fromOption(Option<A> opt, [NonValue nonValue]) {
     if (nonValue == null) {
@@ -364,7 +360,7 @@ abstract class NonValue extends Cell {
   * @see [[Cell]] [[NonValue]] [[NM]] [[Value]]
   */
 class _NA extends NonValue {
-  get() => throw new NoSuchElementException("NA.get");
+  get() => throw new UnsupportedError("NA.get");
   String valueString() => "NA";
 }
 
@@ -380,7 +376,7 @@ final _NA NA = new _NA();
   * @see [[Cell]] [[NonValue]] [[NA]] [[Value]]
   */
 class _NM extends NonValue {
-  get() => throw new NoSuchElementException("NM.get");
+  get() => throw new UnsupportedError("NM.get");
   String valueString() => "NM";
 }
 

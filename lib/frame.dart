@@ -2,6 +2,7 @@ library frame;
 
 import 'dart:collection' show ListBase;
 import 'package:option/option.dart';
+import 'package:duty/match.dart' show PartialFunction;
 
 part 'src/cell.dart';
 part 'src/column.dart';
