@@ -442,7 +442,7 @@ class OrderedIndex<K> extends Index<K> {
   }
 }
 
-class IndexBuilder<K> extends mutable.Builder<Tuple2<K, int>, Index<K>> {
+class IndexBuilder<K> {//extends mutable.Builder<Tuple2<K, int>, Index<K>> {
   var keys = mutable.ArrayBuilder.make();
   var indices = mutable.ArrayBuilder.make();
 

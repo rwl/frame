@@ -5,36 +5,37 @@ import 'package:option/option.dart';
 import 'package:frame/frame.dart';
 
 cellTest() {
-  group("Cell", () {
+  group("Cell should", () {
     test("be constructable from Option", () {
-      expect(Cell.fromOption(new Some(2)), equals(new Value(2)));
-      expect(Cell.fromOption(new None()), equals(NA));
+      new Cell.fromOption(new Some<int>(2)) == new Value<int>(2);
+      expect(new Cell.fromOption(new Some<int>(2)), equals(new Value<int>(2)));
+      assert(new Cell.fromOption(new None()) == NA);
+      expect(new Cell.fromOption(new None()), equals(NA));
     });
 
     test("have sane comparison", () {
-      var order = Cell.cellOrder; //[Int]
-      expect(order.compare(new Value(1), new Value(1)), equals(0));
-      expect(order.compare(new Value(2), new Value(1)), equals(1));
-      expect(order.compare(new Value(1), new Value(2)), equals(-1));
-      expect(order.compare(NA, NA), equals(0));
-      expect(order.compare(NM, NM), equals(0));
-      expect(order.compare(NA, NM), equals(-1));
-      expect(order.compare(NA, new Value(1)), equals(-1));
-      expect(order.compare(new Value(1), NA), equals(1));
-      expect(order.compare(NM, NA), equals(1));
-      expect(order.compare(new Value(1), NM), equals(1));
+      expect(new Value(1).compareTo(new Value(1)), equals(0));
+      expect(new Value(2).compareTo(new Value(1)), equals(1));
+      expect(new Value(1).compareTo(new Value(2)), equals(-1));
+      expect(NA.compareTo(NA), equals(0));
+      expect(NM.compareTo(NM), equals(0));
+      expect(NA.compareTo(NM), equals(-1));
+      expect(NA.compareTo(new Value(1)), equals(-1));
+      expect(new Value(1).compareTo(NA), equals(1));
+      expect(NM.compareTo(NA), equals(1));
+      expect(new Value(1).compareTo(NM), equals(1));
     });
 
     test("have sane equality", () {
       expect(NA, equals(NA));
-      expect(NA, equals(new Value(NA)));
+      expect(NA == new Value(NA), isTrue);
       expect(new Value(NA), equals(NA));
       expect(NM, equals(NM));
-      expect(NM, equals(new Value(NM)));
+      expect(NM == new Value(NM), isTrue);
       expect(new Value(NM), equals(NM));
       expect(new Value(2), equals(new Value(2)));
     });
-
+    /*
     tnie() {
       throw new UnimplementedError();
     }
@@ -104,5 +105,8 @@ cellTest() {
       expect(
           (NM as Cell<int>).zipMap(new Value(2), (a, b) => a + b), equals(NM));
     });
+     */
   });
 }
+
+main() => cellTest();

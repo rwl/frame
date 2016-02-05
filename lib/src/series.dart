@@ -1222,8 +1222,8 @@ class Series<K, V> {
   }
 }
 
-abstract class _AbstractSeriesBuilder
-    extends mutable.Builder<Tuple2<K, Cell<V>>, Series<K, V>> {
+abstract class _AbstractSeriesBuilder {
+  //extends mutable.Builder<Tuple2<K, Cell<V>>, Series<K, V>> {
   var keyBldr = new Array<K>.newBuilder();
   var colBldr = new Column<V>.newBuilder();
 

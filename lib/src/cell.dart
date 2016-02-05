@@ -26,7 +26,29 @@ part of frame;
   * @tparam A the value type contain in the cell
   * @see [[Value]] [[[NonValue]]] [[NA]] [[NM]]
   */
-abstract class Cell<A> {
+abstract class Cell<A extends Comparable> implements Comparable<Cell<A>> {
+  Cell();
+
+  int compareTo(Cell<A> other) {
+    if (this is Value && other is Value) {
+      return get().compareTo(other.get());
+    } else if (this == NA && other == NA) {
+      return 0;
+    } else if (this == NM && other == NM) {
+      return 0;
+    } else if (this == NA) {
+      return -1;
+    } else if (other == NA) {
+      return 1;
+    } else if (this == NM) {
+      return -1;
+    } else if (other == NM) {
+      return 1;
+    } else {
+      throw other;
+    }
+  }
+
   /** Returns true if this [[Cell]] is a value that is available and meaningful.
     *
     * @return true if this [[Cell]] is a value that is available and meaningful.
@@ -178,7 +200,7 @@ abstract class Cell<A> {
       }
     } else {
       var value = this;
-      retuen value;
+      return value;
     }
   }
 
@@ -207,7 +229,7 @@ abstract class Cell<A> {
     } else if (this == NM) {
       return false;
     } else {
-      var a = new Value(a);
+//      var a = new Value(a);
       return p(a);
     }
   }
@@ -284,11 +306,15 @@ abstract class Cell<A> {
   static Cell<A> notAvailable() => NA;
   static Cell<A> notMeaningful() => NM;
 
-  static Cell<A> fromOption(Option<A> opt, [NonValue nonValue = NA]) {
-//      opt match {
-//      case Some(a) => Value(a)
-//      case None => nonValue
-//    }
+  factory Cell.fromOption(Option<A> opt, [NonValue nonValue]) {
+    if (nonValue == null) {
+      nonValue = NA;
+    }
+    if (opt is Some) {
+      return new Value(opt.get());
+    } else if (opt is None) {
+      return nonValue;
+    }
   }
 }
 
@@ -303,6 +329,28 @@ abstract class NonValue extends Cell {
 
   @override
   bool operator ==(that) {
+    if (that == null) {
+      return false;
+    } else if (that is NonValue) {
+      if (identical(that, NA)) {
+        return identical(this, NA);
+      } else if (identical(that, NM)) {
+        return identical(this, NM);
+      } else {
+        return false;
+      }
+    } else if (that is Value) {
+      if (identical(that.get(), NA)) {
+        return identical(this, NA);
+      } else if (identical(that.get(), NM)) {
+        return identical(this, NM);
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+
 //    that match {
 //    case Value(thatValue) => this == thatValue
 //    case _ => super.equals(that)
@@ -347,13 +395,35 @@ class Value<A> extends Cell<A> {
   A _get;
   Value(this._get);
 
-  value() => Some(_get);
+  A get() => _get;
+  value() => new Some(_get);
   String valueString() => _get.toString();
 
   bool isValue() => (_get == NA || _get == NM) ? false : true;
 
   @override
   bool operator ==(that) {
+    if (that == null) {
+      return false;
+    } else if (that is Cell) {
+      if (identical(that, NA)) {
+        return identical(this, NA);
+      } else if (identical(that, NM)) {
+        return identical(this, NM);
+      } else if (identical(that.get(), NA)) {
+        return identical(this, NA);
+      } else if (identical(that.get(), NM)) {
+        return identical(this, NM);
+      } else if (identical(get(), NA)) {
+        return identical(that, NA);
+      } else if (identical(get(), NM)) {
+        return identical(that, NM);
+      } else {
+        return get() == that.get();
+      }
+    } else {
+      return false;
+    }
 //    that match {
 //    case Value(Value(NA)) => get == NA
 //    case Value(Value(NM)) => get == NM
@@ -372,10 +442,10 @@ class _CellInstances {
 
 final _CellInstances CellInstances = new _CellInstances();
 
-abstract class CellInstances extends CellInstances0 {
+//abstract class CellInstances extends CellInstances0 {
 //  implicit def cellOrder[A: Order]: Order[Cell<A>] = new CellOrder<A>
 //  implicit def cellMonoid[A: Semigroup]: Monoid[Cell<A>] = new CellMonoid<A>
-}
+//}
 
 //private final class CellEq[A: Eq] extends Eq[Cell<A>] {
 //  import spire.syntax.eq._

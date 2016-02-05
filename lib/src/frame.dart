@@ -857,7 +857,8 @@ class RowOrientedFrame<Row, Col> extends Frame<Row, Col> {
       new RowOrientedFrame(rows.index, colIdx, rows.column);
 }
 
-class RowView<K> extends UntypedColumn {
+class RowView<K> {
+  //extends UntypedColumn {
   Index<K> index;
   Column<UntypedColumn> cols;
   int row;
