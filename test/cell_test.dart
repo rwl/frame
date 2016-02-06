@@ -49,8 +49,8 @@ cellTest() {
     });
 
     test("return default for getOrElse when NA/NM", () {
-      expect(NA.getOrElse(42), equals(42));
-      expect(NM.getOrElse(42), equals(42));
+      expect(NA.getOrElse(() => 42), equals(42));
+      expect(NM.getOrElse(() => 42), equals(42));
     });
 
     test("be mappable", () {

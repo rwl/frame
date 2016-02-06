@@ -1,6 +1,8 @@
 name: frame
 dependencies:
+  bit_set: any
   collection: any
+  concepts: any
   duty: any
   intl: any
   option: any
