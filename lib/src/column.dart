@@ -208,7 +208,7 @@ abstract class Column<A> {
    * only once, you can [[memoize]] the column or use on of the *forcing*
    * methods, such as [[reindex]] or [[force]].
    */
-  static Column<A> eval(Cell<A> get(int i)) => new EvalColumn(get);
+  static Column eval(Cell get(int i)) => new EvalColumn(get);
 
   /**
    * Create a dense column from an array of values. A dense column can still
