@@ -17,6 +17,8 @@
 part of frame;
 
 abstract class Column<A> {
+  Column();
+
   dynamic foldRow(int row, na, nm, f(a)) {
     if (true) {
       var r = row;
@@ -193,20 +195,20 @@ abstract class Column<A> {
   /// The [NM] mask (`nm`) always takes precedence over the [NA] mask
   /// (`na`).  If a row is outside of the range 0 until `values.length`, then if
   /// `nm(row)` is true, [NM] will be returned, otherwise [NA] is returned.
-  static Column<A> dense(Type typ, List<A> values, [BitSet na, BitSet nm]) {
+  factory Column.dense(Type typ, List<A> values, [BitSet na, BitSet nm]) {
     if (na == null) {
-      na = new BitSet(0, 0);
+      na = new BitSet(0, false);
     }
     if (nm == null) {
-      nm = new BitSet(0, 0);
+      nm = new BitSet(0, false);
     }
-    if (typ == double) {
-      return new DoubleColumn(values, na, nm);
-    } else if (typ == int) {
-      return new IntColumn(values, na, nm);
-    } else {
-      return new GenericColumn<A>(values, na, nm);
-    }
+//    if (typ == double) {
+//      return new DoubleColumn(values, na, nm);
+//    } else if (typ == int) {
+//      return new IntColumn(values, na, nm);
+//    } else {
+    return new GenericColumn<A>(values, na, nm);
+//    }
   }
 
   factory Column.fromValues(Iterable<A> values) {
@@ -234,11 +236,25 @@ class ColumnMonoid<A> implements Monoid<Column<A>> {
   Column<A> merge(Column<A> other) => lhs.orElse(other);
 }
 
+abstract class UnboxedColumn<A extends Comparable> extends Column<A> {
+  bool isValueAt(int row);
+  NonValue nonValueAt(int row);
+  A valueAt(int row);
+
+  Cell<A> apply(int row) {
+    if (isValueAt(row)) {
+      return new Value(valueAt(row));
+    } else {
+      return nonValueAt(row);
+    }
+  }
+}
+
 class ColumnBuilder<A> {
   var i = 0;
   List<A> values = [];
-  List<int> na = [];
-  List<int> nm = [];
+  BitSet na = [];
+  BitSet nm = [];
 
   void addValue(A a) {
     values.add(a);
@@ -246,7 +262,7 @@ class ColumnBuilder<A> {
   }
 
   void addNA() {
-    na.add(i);
+    na.insertAt(pos, n)(i);
     values.add(null);
     i += 1;
   }

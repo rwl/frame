@@ -247,9 +247,9 @@ class NotAvailable extends NonValue {
 
   String valueString() => "NA";
 
-  dynamic fold(na(), nm(), f(A a)) => na();
+  dynamic fold(na(), nm(), f(a)) => na();
 
-  bool forAll(bool p(A a)) => true;
+  bool forAll(bool p(a)) => true;
 
   Cell collect(PartialFunction pf) {
     if (pf.isDefinedOn(get)) {

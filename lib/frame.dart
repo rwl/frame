@@ -2,13 +2,13 @@ library frame;
 
 import 'dart:math' as math;
 import 'dart:collection' show ListBase;
-import 'dart:typed_data' show Uint32List;
+import 'dart:typed_data' show Int64List;
 
 import 'package:option/option.dart';
 import 'package:duty/match.dart' show PartialFunction;
 import 'package:quiver/core.dart' show hash2, hash3;
 import 'package:quiver/iterables.dart' show range;
-import 'package:bit_set/bit_set.dart';
+//import 'bitset.dart';
 import 'package:concepts/concepts.dart' show Monoid;
 
 //part 'src/cell.dart';
@@ -23,6 +23,8 @@ import 'package:concepts/concepts.dart' show Monoid;
 
 part 'cell.dart';
 part 'column.dart';
+part 'column/mask.dart';
+part 'column/dense_column.dart';
 
 const int MIN_INT = -9007199254740991; //-2147483648;
 const int MAX_INT = 9007199254740991; //2147483647;

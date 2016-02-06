@@ -16,30 +16,28 @@ class ColumnTest<A extends Comparable> {
 
   columnTest() {
     List<Cell<A>> slice(Column<A> col, Iterable<int> indices) =>
-        indices.toList().map((i) => col.apply(i));
+        indices.toList().map((i) => col.apply(i)).toList();
 
-    Column<A> mkEval(Column<A> col) => Column.eval((row) => col.apply(row));
-
-    var cg = new gen.CellGenerator<A>(rand);
-
-    Column<A> genColumn() {
-      var cellValues =
-          new List<Cell<A>>.generate(gen.maxl, (_) => cg.genCell(2, 1, 1));
-      var dense = gen.r.nextBool();
-      var col = new Column.fromCells(cellValues);
-      return dense ? col : mkEval(col);
-    }
-
-//  implicit def arbColumn[A: Arbitrary]: Arbitrary[Column<A>] = Arbitrary(genColumn(arbitrary<A>))
-
-    Column<A> col;
-    setUp(() {
-      col = genColumn();
-    });
+//    Column<A> mkEval(Column<A> col) => new Column.eval((row) => col.apply(row));
+//
+//    var cg = new gen.CellGenerator<A>(rand);
+//
+//    Column<A> genColumn() {
+//      var cellValues =
+//          new List<Cell<A>>.generate(gen.maxl, (_) => cg.genCell(2, 1, 1));
+//      var dense = gen.r.nextBool();
+//      var col = new Column.fromCells(cellValues);
+//      return dense ? col : mkEval(col);
+//    }
+//
+//    Column<A> col;
+//    setUp(() {
+//      col = genColumn();
+//    });
 
     group("Column construction", () {
       test("wrap arrays", () {
-        var col = Column.dense([1, 2, 3]);
+        var col = new Column.dense(int, [1, 2, 3]);
         expect(slice(col, [-1, 0, 1, 2, 3]),
             equals([NA, new Value(1), new Value(2), new Value(3), NA]));
       });
@@ -50,20 +48,21 @@ class ColumnTest<A extends Comparable> {
             equals([NA, NM, NA, new Value("a"), NM, NA]));
       });
 
-      test("wrap row function", () {
-        var col = Column.eval((row) => new Value(-row));
-        expect(col.apply(0), equals(new Value(0)));
-        expect(col.apply(MIN_INT), equals(new Value(MIN_INT)));
-        expect(col.apply(MAX_INT), equals(new Value(-MAX_INT)));
-        expect(col.apply(5), equals(new Value(-5)));
-      });
-
-      test("empty is empty", () {
-        var col = Column.empty /*[String]*/ ();
-        expect(slice(col, [MIN_INT, 0, MAX_INT, -1, 1, 200]), contains(NA));
-      });
+//      test("wrap row function", () {
+//        var col = Column.eval((row) => new Value(-row));
+//        expect(col.apply(0), equals(new Value(0)));
+//        expect(col.apply(MIN_INT), equals(new Value(MIN_INT)));
+//        expect(col.apply(MAX_INT), equals(new Value(-MAX_INT)));
+//        expect(col.apply(5), equals(new Value(-5)));
+//      });
+//
+//      test("empty is empty", () {
+//        var col = Column.empty /*[String]*/ ();
+//        expect(slice(col, [MIN_INT, 0, MAX_INT, -1, 1, 200]), contains(NA));
+//      });
     });
-
+  }
+/*
     group("memo columns", () {
       test("only evaluate values at most once", () {
         var counter = 0;
@@ -587,15 +586,16 @@ class ColumnTest<A extends Comparable> {
       });
     });
   }
+   */
 }
 
-class ColumnOps<A> {
-  Column<A> col;
-  ColumnOps(this.col);
-
-  Vector<Cell<A>> slice(Seq<int> rows) =>
-      rows.map((r) => col(r), collection.breakOut);
-}
+//class ColumnOps<A> {
+//  Column<A> col;
+//  ColumnOps(this.col);
+//
+//  List<Cell<A>> slice(Iterable<int> rows) =>
+//      rows.map((r) => col(r), collection.breakOut);
+//}
 
 main() {
   var ct = new ColumnTest<double>(() => gen.r.nextDouble());
