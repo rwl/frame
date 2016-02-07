@@ -50,7 +50,7 @@ maskTest() {
 
   group("+ should", () {
     test("add 0 to empty mask", () {
-      expect(Mask.empty + 0, equals(new Mask.from([0])));
+      expect(new Mask.empty() + 0, equals(new Mask.from([0])));
     });
 
     test("set bit of value added", () {
@@ -82,7 +82,7 @@ maskTest() {
     });
 
     test("return None for empty Mask", () {
-      expect(Mask.empty.min(), equals(new None()));
+      expect(new Mask.empty().min(), equals(new None()));
     });
   });
 
@@ -93,7 +93,7 @@ maskTest() {
     });
 
     test("return None for empty Mask", () {
-      expect(Mask.empty.max(), equals(new None()));
+      expect(new Mask.empty().max(), equals(new None()));
     });
   });
 
@@ -189,7 +189,7 @@ maskTest() {
       expect(a, equals(b));
     });
 
-    test("should not throw IOOE when size are equal but lengths are not", () {
+    test("should not throw when size are equal but lengths are not", () {
       var a = new Mask.from([1, 2, 3]);
       var b = new Mask.from([1000, 1001, 2000]);
       expect((a == b), isNot(throws));
@@ -200,6 +200,6 @@ maskTest() {
 
 main() {
   for (var i = 0; i < 1; i++) {
-    maskTest();
+    group("Mask", maskTest);
   }
 }

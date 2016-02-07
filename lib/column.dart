@@ -16,10 +16,11 @@
 
 part of frame;
 
-abstract class Column<A> {
+abstract class Column<A extends Comparable> {
   Column();
 
-  dynamic foldRow(int row, na, nm, f(a)) {
+  dynamic foldRow(int row, na, nm, f(a));
+  /*{
     if (true) {
       var r = row;
       if (isValueAt(r)) {
@@ -42,7 +43,7 @@ abstract class Column<A> {
         f(c);
       }
     }
-  }
+  }*/
 
   /// Iterates from `from` until `until`, and for each value `i` in this range,
   /// it retreives a row via `rows(i)`. If this row is `NM` and `abortOnNM` is
@@ -51,7 +52,8 @@ abstract class Column<A> {
   /// the row. If iteration terminates normally (ie. no [NM]s), then `true` is
   /// returned.
   bool forEach(int from, int until, int rows(int a), f(int a, A b),
-      [bool abortOnNM = true]) {
+      [bool abortOnNM = true]);
+  /*{
     bool nm = false;
     var i = from;
     if (true) {
@@ -78,7 +80,7 @@ abstract class Column<A> {
     }
 
     return !nm;
-  }
+  }*/
 
   /// Returns the [Cell] at row `row`.
   Cell<A> apply(int row);
@@ -127,7 +129,7 @@ abstract class Column<A> {
   Column<A> force(int len);
 
   /// Returns a column with rows contained in `na` masked to [NA]s.
-  Column<A> mask(BitSet na);
+  Column<A> mask(Mask na);
 
   /// Returns a column with a single row forced to [NA] and all others
   /// remaining the same. This is equivalent to, but possibly more efficient
@@ -195,12 +197,12 @@ abstract class Column<A> {
   /// The [NM] mask (`nm`) always takes precedence over the [NA] mask
   /// (`na`).  If a row is outside of the range 0 until `values.length`, then if
   /// `nm(row)` is true, [NM] will be returned, otherwise [NA] is returned.
-  factory Column.dense(Type typ, List<A> values, [BitSet na, BitSet nm]) {
+  factory Column.dense(Type typ, List<A> values, [Mask na, Mask nm]) {
     if (na == null) {
-      na = new BitSet(0, false);
+      na = new Mask.empty();
     }
     if (nm == null) {
-      nm = new BitSet(0, false);
+      nm = new Mask.empty();
     }
 //    if (typ == double) {
 //      return new DoubleColumn(values, na, nm);
@@ -212,28 +214,48 @@ abstract class Column<A> {
   }
 
   factory Column.fromValues(Iterable<A> values) {
-    return new AnyColumn<A>(
-        values.toList(), new BitSet(0, 0), new BitSet(0, 0));
+    return new /*AnyColumn*/ GenericColumn<A>(
+        values.toList(), new Mask.empty(), new Mask.empty());
   }
 
   /// Returns a column that returns [NM] for any row in `nmValues` and [NA]
   /// for all others. If all you need is a column that always returns [NA],
   /// then use [Empty].
-  factory Column.empty([BitSet nmValues]) {
+  factory Column.empty([Mask nmValues]) {
     if (nmValues == null) {
-      nmValues = new BitSet(0, 0);
+      nmValues = new Mask.empty();
     }
-    return new AnyColumn<A>(new List(0), new BitSet(0, 0), nmValues);
+    return new /*AnyColumn*/ GenericColumn<A>([], new Mask.empty(), nmValues);
   }
 }
 
-class ColumnMonoid<A> implements Monoid<Column<A>> {
+class ColumnMonoid<A extends Comparable> implements Monoid<Column<A>> {
   final Column<A> lhs;
   ColumnMonoid(this.lhs);
 
   Column<A> empty() => new Column<A>.empty();
 
   Column<A> merge(Column<A> other) => lhs.orElse(other);
+}
+
+abstract class BoxedColumn<A extends num> extends Column<A> {
+  /// Maps the cells of this [Column] using `f`. This method will always
+  /// force the column into an eval column and should be used with caution.
+  Column cellMap(Cell f(Cell<A> a));
+
+  Column map(f(A a)) => cellMap((c) => c is Value ? new Value(f(c.get)) : c);
+
+  Column flatMap(Cell f(A a)) => cellMap((c) => c is Value ? f(c.get) : c);
+
+  Column<A> filter(bool p(A a)) {
+    return cellMap((c) {
+      if (c is Value) {
+        return p(c.get) ? new Value(c.get) : NA;
+      } else if (c is NonValue) {
+        return c;
+      }
+    });
+  }
 }
 
 abstract class UnboxedColumn<A extends Comparable> extends Column<A> {
@@ -250,11 +272,11 @@ abstract class UnboxedColumn<A extends Comparable> extends Column<A> {
   }
 }
 
-class ColumnBuilder<A> {
+class ColumnBuilder<A extends Comparable> {
   var i = 0;
   List<A> values = [];
-  BitSet na = [];
-  BitSet nm = [];
+  MaskBuilder na = new MaskBuilder();
+  MaskBuilder nm = new MaskBuilder();
 
   void addValue(A a) {
     values.add(a);
@@ -262,7 +284,7 @@ class ColumnBuilder<A> {
   }
 
   void addNA() {
-    na.insertAt(pos, n)(i);
+    na.add(i);
     values.add(null);
     i += 1;
   }
@@ -283,7 +305,7 @@ class ColumnBuilder<A> {
     }
   }
 
-  Column<A> result() => new GenericColumn(values, na, nm);
+  Column<A> result() => new GenericColumn(values, na.result(), nm.result());
 
   void clear() {
     i = 0;

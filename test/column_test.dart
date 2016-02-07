@@ -1,13 +1,9 @@
 library frame.test.column;
 
-import 'dart:math' show Random;
 import 'package:test/test.dart';
-import 'package:option/option.dart';
 import 'package:frame/frame.dart';
 
 import 'generators.dart' as gen;
-
-//final Random r = new Random();
 
 class ColumnTest<A extends Comparable> {
   final Function rand;
@@ -48,18 +44,20 @@ class ColumnTest<A extends Comparable> {
             equals([NA, NM, NA, new Value("a"), NM, NA]));
       });
 
-//      test("wrap row function", () {
-//        var col = Column.eval((row) => new Value(-row));
-//        expect(col.apply(0), equals(new Value(0)));
-//        expect(col.apply(MIN_INT), equals(new Value(MIN_INT)));
-//        expect(col.apply(MAX_INT), equals(new Value(-MAX_INT)));
-//        expect(col.apply(5), equals(new Value(-5)));
-//      });
-//
-//      test("empty is empty", () {
-//        var col = Column.empty /*[String]*/ ();
-//        expect(slice(col, [MIN_INT, 0, MAX_INT, -1, 1, 200]), contains(NA));
-//      });
+      test("wrap row function", () {
+        var col = new Column.eval((row) => new Value(-row));
+        expect(col.apply(0), equals(new Value(0)));
+        //expect(col.apply(MIN_INT), equals(new Value(MIN_INT)));
+        expect(col.apply(MAX_INT), equals(new Value(-MAX_INT)));
+        expect(col.apply(5), equals(new Value(-5)));
+      });
+
+      test("empty is empty", () {
+        var col = new Column.empty /*[String]*/ ();
+        expect(
+            slice(col, [MIN_INT, 0, MAX_INT, -1, 1, 200]).every((c) => c == NA),
+            isTrue);
+      });
     });
   }
 /*

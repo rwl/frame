@@ -277,9 +277,9 @@ class NotMeaningful extends NonValue {
 
   String valueString() => "NM";
 
-  dynamic fold(na(), nm(), f(A a)) => nm();
+  dynamic fold(na(), nm(), f(a)) => nm();
 
-  bool forAll(bool p(A a)) => false;
+  bool forAll(bool p(a)) => false;
 
   Cell collect(PartialFunction pf) => NM;
 
@@ -287,7 +287,7 @@ class NotMeaningful extends NonValue {
 }
 
 /// A value that is meaningful.
-class Value<A> extends Cell<A> {
+class Value<A extends Comparable> extends Cell<A> {
   final A get;
 
   Value(this.get);

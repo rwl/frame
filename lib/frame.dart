@@ -2,7 +2,7 @@ library frame;
 
 import 'dart:math' as math;
 import 'dart:collection' show ListBase;
-import 'dart:typed_data' show Int64List;
+import 'dart:typed_data' show Int32List, Int64List, Float64List;
 
 import 'package:option/option.dart';
 import 'package:duty/match.dart' show PartialFunction;
@@ -25,6 +25,8 @@ part 'cell.dart';
 part 'column.dart';
 part 'column/mask.dart';
 part 'column/dense_column.dart';
+part 'column/eval_column.dart';
+part 'column/memoizing_column.dart';
 
 const int MIN_INT = -9007199254740991; //-2147483648;
 const int MAX_INT = 9007199254740991; //2147483647;

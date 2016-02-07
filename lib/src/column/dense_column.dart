@@ -16,7 +16,8 @@
 
 part of frame;
 
-abstract class DenseColumn<A extends num> extends UnboxedColumn<A> {
+abstract class DenseColumn<A extends num> {
+  //extends UnboxedColumn<A> {
   List values();
   Mask naValues();
   Mask nmValues();

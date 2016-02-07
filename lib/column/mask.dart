@@ -120,7 +120,7 @@ class Mask /*extends (Int => Boolean)*/ {
       bits0[i] |= bits[i];
       i += 1;
     }
-    return Mask.fromBits(bits0);
+    return new Mask.fromBits(bits0);
   }
 
   Mask operator &(Mask that) {
@@ -134,7 +134,7 @@ class Mask /*extends (Int => Boolean)*/ {
       bits0[i] = word;
       i += 1;
     }
-    return Mask.fromBits(bits0);
+    return new Mask.fromBits(bits0);
   }
 
   Mask inc(Mask that) => this | that;
@@ -258,7 +258,7 @@ class Mask /*extends (Int => Boolean)*/ {
   MaskBuilder newBuilder() => new MaskBuilder();
 
   /** An empty mask where all bits are unset. */
-  static final empty = new Mask(new Int64List.fromList([0]), 0);
+  factory Mask.empty() => new Mask(new Int64List.fromList([0]), 0);
 
   /**
    * Returns a [[Mask]] where only the bits in `elems` are set to true and all
@@ -276,7 +276,7 @@ class Mask /*extends (Int => Boolean)*/ {
    * Returns a [[Mask]] with all bits from `from` to `until` (exclusive) set
    * and all others unset.
    */
-  static Mask range(int from, int until) {
+  factory Mask.range(int from, int until) {
     var bldr = new MaskBuilder();
     var i = from;
     while (i < until) {
@@ -291,41 +291,29 @@ class Mask /*extends (Int => Boolean)*/ {
    * itself. Please see [[Mask]] for a description of what `bits` should look
    * like.
    */
-  static Mask fromBits(List<int> bits) {
+  factory Mask.fromBits(List<int> bits) {
     var i = 0;
     var size = 0;
     while (i < bits.length) {
-      size += bitCount(bits[i]);
+      size += _bitCount(bits[i]);
       i += 1;
     }
     return new Mask(_trim(bits), size);
   }
 
-  static bitCount(int n) {
+  static _bitCount(int n) {
     assert(n >= 0);
-
     if (n == 0) {
       return 0;
     }
-
     int count;
-    if (true) {
-      count = 0;
-      while (n > 0) {
-        if ((n & 1) == 1) {
-          count++;
-        }
-        n = n >> 1;
+    count = 0;
+    while (n > 0) {
+      if ((n & 1) == 1) {
+        count++;
       }
-    } else {
-      count = n;
-
-      do {
-        n = n >> 1;
-        count -= n;
-      } while (n != 0);
+      n = n >> 1;
     }
-
     return count;
   }
 
@@ -360,11 +348,11 @@ class MaskBuilder {
   void _resize(int newLen) {
     // Note: we won't ever require an array larger than 0x03FFFFFF, so we don't
     // need to worry about the length overflowing below.
-    bits = Mask._copyOf(bits, highestOneBit(newLen) * 2);
+    bits = Mask._copyOf(bits, _highestOneBit(newLen) * 2);
     len = newLen;
   }
 
-  static highestOneBit(int v) {
+  static _highestOneBit(int v) {
     int ret;
     if (v == 0) {
       return 0;
