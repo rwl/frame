@@ -85,11 +85,93 @@ abstract class DenseColumn<A> extends UnboxedColumn<A> {
 
   Column zipMap(Column that, dynamic f(A a, b)) {
     if (that is DenseColumn) {
-      return DenseColumn.zipMap(this, that as DenseColumn, f);
+      return _zipMap(this, that, f);
     } else {
-      return DenseColumn.zipMap(
-          this, that.force(this.values.length) as DenseColumn, f);
+      return _zipMap(this, that.force(this.values.length) as DenseColumn, f);
     }
+  }
+
+  Column _zipMap(DenseColumn<A> _lhs, DenseColumn _rhs, dynamic f(A a, b)) {
+    var _len = math.min(_lhs.values.length, _rhs.values.length);
+    var na = _lhs.naValues | _rhs.naValues;
+    var nm = (_lhs.nmValues | _rhs.nmValues).filter((i) => i < _len && !na(i));
+
+    List<A> lhs = _lhs.values;
+    List rhs = _rhs.values;
+
+    var len = math.min(lhs.length, rhs.length);
+
+    Column loopAny(List xs, int i) {
+      if (i < xs.length) {
+        if (na(i) || nm(i)) {
+          return loopAny(xs, i + 1);
+        } else {
+          xs[i] = f(lhs[i], rhs[i]);
+          return loopAny(xs, i + 1);
+        }
+      } else {
+        return AnyColumn(xs, na, nm);
+      }
+    }
+
+    Column loopInt(Int32List xs, int i0) {
+      var i = i0;
+      while (i < xs.length) {
+        if (!(na(i) || nm(i))) {
+          try {
+            xs[i] = f(lhs[i], rhs[i]) as int;
+          } on CastError catch (_) {
+            return loopAny(_copyToAnyArray(xs, i), i);
+          }
+        }
+        i += 1;
+      }
+
+      return new IntColumn(xs, na, nm);
+    }
+
+    Column loopDouble(Float64List xs, int i0) {
+      var i = i0;
+      while (i < xs.length) {
+        if (!(na(i) || nm(i))) {
+          try {
+            xs[i] = f(lhs[i], rhs[i]) as double;
+          } on CastError catch (_) {
+            return loopAny(_copyToAnyArray(xs, i), i);
+          }
+        }
+        i += 1;
+      }
+
+      return new DoubleColumn(xs, na, nm);
+    }
+
+    Column loop(int i) {
+      if (i < lhs.length && i < rhs.length) {
+        if (na(i) || nm(i)) {
+          return loop(i + 1);
+        } else {
+          var x = f(lhs[i], rhs[i]);
+          if (x is int) {
+            var xs = new List<int>(len);
+            xs[i] = x;
+            return loopInt(xs, i + 1);
+          } else if (x is num) {
+            var xs = new List<double>(len);
+            xs[i] = x;
+            return loopDouble(xs, i + 1);
+          } else {
+            var xs = new List(len);
+            xs[i] = x;
+            return loopAny(xs, i + 1);
+          }
+        }
+      } else {
+        return new Column.empty(nm);
+      }
+    }
+
+    return loop(0);
   }
 
   @override
@@ -239,8 +321,79 @@ class GenericColumn<A> extends DenseColumn<A> {
 
   A valueAt(int row) => values[row];
 
-  Column map(dynamic f(A a)) =>
-      DenseColumn.mapGeneric(values, naValues, nmValues, f);
+  Column map(dynamic f(A a)) => _map(values, naValues, nmValues, f);
+
+  Column _map(List<A> values, Mask naValues, Mask nmValues, dynamic f(A a)) {
+    Column loopAny(List xs, int i) {
+      if (i < xs.length) {
+        if (naValues[i] || nmValues[i]) {
+          return loopAny(xs, i + 1);
+        } else {
+          xs[i] = f(values[i]);
+          return loopAny(xs, i + 1);
+        }
+      } else {
+        return new AnyColumn(xs, naValues, nmValues);
+      }
+    }
+
+    Column loopInt(Int32List xs, int i0) {
+      var i = i0;
+      while (i < xs.length) {
+        if (!(naValues[i] || nmValues[i])) {
+          try {
+            xs[i] = f(values[i]) as int;
+          } on CastError catch (_) {
+            return loopAny(_copyToAnyArray(xs, i), i);
+          }
+        }
+        i += 1;
+      }
+      return new IntColumn(xs, naValues, nmValues);
+    }
+
+    Column loopDouble(Float64List xs, int i0) {
+      var i = i0;
+      while (i < xs.length) {
+        if (!(naValues[i] || nmValues[i])) {
+          try {
+            xs[i] = f(values[i]) as double;
+          } on CastError catch (_) {
+            return loopAny(_copyToAnyArray(xs, i), i);
+          }
+        }
+        i += 1;
+      }
+      return new DoubleColumn(xs, naValues, nmValues);
+    }
+
+    Column loop(int i) {
+      if (i < values.length) {
+        if (naValues[i] || nmValues[i]) {
+          return loop(i + 1);
+        } else {
+          var x = f(values[i]);
+          if (x is int) {
+            var xs = new Int32List(values.length);
+            xs[i] = x;
+            return loopInt(xs, i + 1);
+          } else if (x is num) {
+            var xs = new Float64List(values.length);
+            xs[i] = x;
+            return loopDouble(xs, i + 1);
+          } else {
+            var xs = new List(values.length);
+            xs[i] = x;
+            return loopAny(xs, i + 1);
+          }
+        }
+      } else {
+        return new Column.empty(nmValues);
+      }
+    }
+
+    return loop(0);
+  }
 
   Column<A> reindex(List<int> index) =>
       DenseColumn.reindexGeneric(index, values, naValues, nmValues);
@@ -306,4 +459,19 @@ class GenericColumn<A> extends DenseColumn<A> {
       });
     }
   }
+}
+
+class AnyColumn extends GenericColumn {
+  AnyColumn(List values, Mask naValues, Mask nmValues)
+      : super(values, naValues, nmValues);
+}
+
+List _copyToAnyArray(List xs, int len) {
+  var ys = new List(xs.length);
+  var i = 0;
+  while (i < xs.length && i < len) {
+    ys[i] = xs[i];
+    i += 1;
+  }
+  return ys;
 }

@@ -2,6 +2,7 @@ library frame.test.column;
 
 import 'package:test/test.dart';
 import 'package:frame/frame.dart';
+import 'package:option/option.dart';
 import 'package:quiver/iterables.dart' show range;
 
 import 'generators.dart' as gen;
@@ -34,7 +35,7 @@ class ColumnTest<A extends Comparable> {
 
     group("Column construction", () {
       test("wrap arrays", () {
-        var col = new Column.dense(int, [1, 2, 3]);
+        var col = new Column.dense([1, 2, 3]);
         expect(slice(col, [-1, 0, 1, 2, 3]),
             equals([NA, new Value(1), new Value(2), new Value(3), NA]));
       });
@@ -434,11 +435,9 @@ class ColumnTest<A extends Comparable> {
       test("manually spec from dense constructor", () {
         expect(new Column.dense(["1", "2", "3"]),
             new isInstanceOf<GenericColumn>());
-        expect(new Column.dense([1, 2, 3], type: int),
-            new isInstanceOf<IntColumn>());
-        expect(new Column.dense([1, 2, 3], type: int),
-            new isInstanceOf<LongColumn>());
-        expect(new Column.dense([1.0, 2.0, 3.0], type: double),
+        expect(new Column.dense([1, 2, 3]), new isInstanceOf<IntColumn>());
+        expect(new Column.dense([1, 2, 3]), new isInstanceOf<LongColumn>());
+        expect(new Column.dense([1.0, 2.0, 3.0]),
             new isInstanceOf<DoubleColumn>());
       });
 
@@ -454,111 +453,112 @@ class ColumnTest<A extends Comparable> {
       });
 
       test("use AnyColumn when type is not known and not-spec", () {
-        Column<A> mkCol(Iterable<A> a) => new Column(a.map((aa) => Value(aa)));
-        expect(mkCol("x", "y"), new isInstanceOf<AnyColumn>());
+        Column<A> mkCol(Iterable<A> a) =>
+            new Column.fromCells(a.map((aa) => new Value(aa)));
+        expect(mkCol(["x", "y"]), new isInstanceOf<AnyColumn>());
       });
 
       test("use spec col when type is not known but spec", () {
         Column<A> mkCol(Iterable<A> a) =>
-            new Column(a.map((aa) => new Value(aa)));
-        expect(mkCol(1, 2), new isInstanceOf<IntColumn>());
-        expect(mkCol(1, 2), new isInstanceOf<LongColumn>());
-        expect(mkCol(1.0, 2.0), new isInstanceOf<DoubleColumn>());
+            new Column.fromCells(a.map((aa) => new Value(aa)));
+        expect(mkCol([1, 2]), new isInstanceOf<IntColumn>());
+        expect(mkCol([1, 2]), new isInstanceOf<LongColumn>());
+        expect(mkCol([1.0, 2.0]), new isInstanceOf<DoubleColumn>());
       });
 
       test("force manual spec through map", () {
-        var col = Column.dense(["1", "2", "3"], Mask(1));
+        var col = new Column.dense(["1", "2", "3"], new Mask.from([1]));
         expect(col.map((c) => c.toDouble()), new isInstanceOf<DoubleColumn>());
         expect(col.map((c) => c.toInt()), new isInstanceOf<IntColumn>());
         expect(col.map((c) => c.toLong()), new isInstanceOf<LongColumn>());
       });
 
       test("force manual spec through flatMap", () {
-        var col = Column.dense(["1", "2", "3"], Mask(1));
-        expect(col.flatMap((n) => Value(n.toDouble())),
+        var col = new Column.dense(["1", "2", "3"], new Mask.from([1]));
+        expect(col.flatMap((n) => new Value(n.toDouble())),
             new isInstanceOf<DoubleColumn>());
-        expect(col.flatMap((n) => Value(n.toInt())),
+        expect(col.flatMap((n) => new Value(n.toInt())),
             new isInstanceOf<IntColumn>());
-        expect(col.flatMap((n) => Value(n.toLong())),
+        expect(col.flatMap((n) => new Value(n.toLong())),
             new isInstanceOf<LongColumn>());
       });
 
       test("retain manual spec through filter", () {
-        expect(Column.dense([1, 2, 3]).filter((v) => v == 2),
+        expect(new Column.dense([1, 2, 3]).filter((v) => v == 2),
             new isInstanceOf<IntColumn>());
-        expect(Column.dense([1.0, 2.0, 3.0]).filter((v) => v == 2),
+        expect(new Column.dense([1.0, 2.0, 3.0]).filter((v) => v == 2),
             new isInstanceOf<DoubleColumn>());
-        expect(Column.dense([1, 2, 3]).filter((v) => v == 2),
+        expect(new Column.dense([1, 2, 3]).filter((v) => v == 2),
             new isInstanceOf<LongColumn>());
       });
 
       test("retain manual spec through orElse", () {
-        expect(Column(Value(1)).orElse(Column(Value(2))),
+        expect(
+            new Column.fromCells([new Value(1)])
+                .orElse(new Column.fromCells([new Value(2)])),
             new isInstanceOf<IntColumn>());
-        expect(Column(Value(1)).orElse(Column(Value(2))),
+        expect(
+            new Column.fromCells([new Value(1)])
+                .orElse(new Column.fromCells([new Value(2)])),
             new isInstanceOf<LongColumn>());
-        expect(Column(Value(1.0)).orElse(Column(Value(2.0))),
+        expect(
+            new Column.fromCells([new Value(1.0)])
+                .orElse(new Column.fromCells([new Value(2.0)])),
             new isInstanceOf<DoubleColumn>());
       });
 
       test("retain manual spec through reindex", () {
-        expect(Column.dense([1, 2, 3]).reindex(Array(2, 1, 0)),
+        expect(new Column.dense([1, 2, 3]).reindex([2, 1, 0]),
             new isInstanceOf<IntColumn>());
-        expect(Column.dense([1.0, 2.0, 3.0]).reindex(Array(2, 1, 0)),
+        expect(new Column.dense([1.0, 2.0, 3.0]).reindex([2, 1, 0]),
             new isInstanceOf<DoubleColumn>());
-        expect(Column.dense([1, 2, 3]).reindex(Array(2, 1, 0)),
+        expect(new Column.dense([1, 2, 3]).reindex([2, 1, 0]),
             new isInstanceOf<LongColumn>());
       });
 
       test("retain manual spec through force", () {
-        expect(Column.dense([1, 2, 3]).force(2), new isInstanceOf<IntColumn>());
-        expect(Column.dense([1.0, 2.0, 3.0]).force(2),
+        expect(new Column.dense([1, 2, 3]).force(2),
+            new isInstanceOf<IntColumn>());
+        expect(new Column.dense([1.0, 2.0, 3.0]).force(2),
             new isInstanceOf<DoubleColumn>());
-        expect(
-            Column.dense([1, 2, 3]).force(2), new isInstanceOf<LongColumn>());
+        expect(new Column.dense([1, 2, 3]).force(2),
+            new isInstanceOf<LongColumn>());
       });
 
       test("retain manual spec through mask", () {
-        var mask = Mask(1);
-        expect(
-            Column.dense([1, 2, 3]).mask(mask), new isInstanceOf<IntColumn>());
-        expect(Column.dense([1.0, 2.0, 3.0]).mask(mask),
+        var mask = new Mask.from([1]);
+        expect(new Column.dense([1, 2, 3]).mask(mask),
+            new isInstanceOf<IntColumn>());
+        expect(new Column.dense([1.0, 2.0, 3.0]).mask(mask),
             new isInstanceOf<DoubleColumn>());
-        expect(
-            Column.dense([1, 2, 3]).mask(mask), new isInstanceOf<LongColumn>());
+        expect(new Column.dense([1, 2, 3]).mask(mask),
+            new isInstanceOf<LongColumn>());
       });
 
       test("retain manual spec through setNA", () {
-        expect(Column.dense([1, 2, 3]).setNA(Int.MinValue),
+        expect(new Column.dense([1, 2, 3]).setNA(MIN_INT),
             new isInstanceOf<IntColumn>());
-        expect(Column.dense([1.0, 2.0, 3.0]).setNA(Int.MinValue),
+        expect(new Column.dense([1.0, 2.0, 3.0]).setNA(MIN_INT),
             new isInstanceOf<DoubleColumn>());
-        expect(Column.dense([1, 2, 3]).setNA(Int.MinValue),
+        expect(new Column.dense([1, 2, 3]).setNA(MIN_INT),
             new isInstanceOf<LongColumn>());
       });
 
       test("setNA should be no-op when row already NA", () {
-        var col = Column.dense([1, 2, 3]).asInstanceOf[IntColumn];
+        var col = new Column.dense([1, 2, 3]) as IntColumn;
         expect(
-            Column.dense([1, 2, 3])
-                .setNA(Int.MinValue)
-                .setNA(3)
-                .setNA(Int.MaxValue)
-                .asInstanceOf[IntColumn].naValues.max,
-            equals(None));
+            (new Column.dense([1, 2, 3]).setNA(MIN_INT).setNA(3).setNA(MAX_INT)
+                as IntColumn).naValues.max(),
+            equals(new None()));
         expect(
-            Column.dense([1, 2, 3])
-                .setNA(Int.MinValue)
-                .setNA(3)
-                .setNA(Int.MaxValue)
-                .asInstanceOf[LongColumn].naValues.max,
-            equals(None));
+            (new Column.dense([1, 2, 3]).setNA(MIN_INT).setNA(3).setNA(MAX_INT)
+                as LongColumn).naValues.max(),
+            equals(new None()));
         expect(
-            Column.dense([1.0, 2.0, 3.0])
-                .setNA(Int.MinValue)
+            (new Column.dense([1.0, 2.0, 3.0])
+                .setNA(MIN_INT)
                 .setNA(3)
-                .setNA(Int.MaxValue)
-                .asInstanceOf[DoubleColumn].naValues.max,
+                .setNA(MAX_INT) as DoubleColumn).naValues.max(),
             equals(None));
       });
     });
@@ -566,35 +566,30 @@ class ColumnTest<A extends Comparable> {
 
   evalColumnSpec() {
     Column<A> mkCol(Iterable<Cell<A>> cells) {
-      var cells0 = cells.toVector();
-      Column.eval((row) => (row >= 0 && row < cells0.size) ? cells0(row) : NA);
+      var cells0 = cells.toList();
+      return new Column.eval(
+          (row) => (row >= 0 && row < cells0.length) ? cells0(row) : NA);
     }
     baseColumnSpec(mkCol);
 
     group("eval columns", () {
       test("return dense columns from reindex", () {
-        expect(Column.eval(Value(_)).reindex(Array(1, 3, 2)),
+        expect(new Column.eval((a) => new Value(a)).reindex([1, 3, 2]),
             new isInstanceOf<DenseColumn>());
       });
 
       test("return dense columns from force", () {
-        expect(Column.eval(Value(_)).force(5), new isInstanceOf<DenseColumn>());
+        expect(new Column.eval((a) => new Value(a)).force(5),
+            new isInstanceOf<DenseColumn>());
       });
 
       test("not overflow index on shift", () {
-        expect(Column.eval(Value(_)).shift(1)(Int.MinValue), equals(NA));
+        expect(new Column.eval((a) => new Value(a)).shift(1).apply(MIN_INT),
+            equals(NA));
       });
     });
   }
 }
-
-//class ColumnOps<A> {
-//  Column<A> col;
-//  ColumnOps(this.col);
-//
-//  List<Cell<A>> slice(Iterable<int> rows) =>
-//      rows.map((r) => col(r), collection.breakOut);
-//}
 
 main() {
   var ct = new ColumnTest<double>(() => gen.r.nextDouble());

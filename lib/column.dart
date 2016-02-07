@@ -20,30 +20,6 @@ abstract class Column<A extends Comparable> {
   Column();
 
   dynamic foldRow(int row, na, nm, f(a));
-  /*{
-    if (true) {
-      var r = row;
-      if (isValueAt(r)) {
-        f(valueAt(r));
-      } else {
-        var nv = nonValueAt(r);
-        if (nv == NA) {
-          na();
-        } else if (nv == NM) {
-          nm();
-        }
-      }
-    } else {
-      var c = apply(row);
-      if (c == NA) {
-        na();
-      } else if (c == NM) {
-        nm();
-      } else {
-        f(c);
-      }
-    }
-  }*/
 
   /// Iterates from `from` until `until`, and for each value `i` in this range,
   /// it retreives a row via `rows(i)`. If this row is `NM` and `abortOnNM` is
@@ -53,34 +29,6 @@ abstract class Column<A extends Comparable> {
   /// returned.
   bool forEach(int from, int until, int rows(int a), f(int a, A b),
       [bool abortOnNM = true]);
-  /*{
-    bool nm = false;
-    var i = from;
-    if (true) {
-      while (i < until && !nm) {
-        var row = getRow(i);
-        var v = apply(row);
-        if (v is Value) {
-          f(i, v);
-        } else if (v == NM) {
-          nm = abortOnNM;
-        }
-        i += 1;
-      }
-    } else {
-      while (i < until && !nm) {
-        var row = getRow(i);
-        if (isValueAt(row)) {
-          f(i, valueAt(row));
-        } else if (nonValueAt(row) == NM) {
-          nm = abortOnNM;
-        }
-        i += 1;
-      }
-    }
-
-    return !nm;
-  }*/
 
   /// Returns the [Cell] at row `row`.
   Cell<A> apply(int row);
@@ -197,7 +145,7 @@ abstract class Column<A extends Comparable> {
   /// The [NM] mask (`nm`) always takes precedence over the [NA] mask
   /// (`na`).  If a row is outside of the range 0 until `values.length`, then if
   /// `nm(row)` is true, [NM] will be returned, otherwise [NA] is returned.
-  factory Column.dense(List<A> values, {Mask na, Mask nm, Type type}) {
+  factory Column.dense(List<A> values, [Mask na, Mask nm]) {
     if (na == null) {
       na = new Mask.empty();
     }
@@ -239,6 +187,35 @@ class ColumnMonoid<A extends Comparable> implements Monoid<Column<A>> {
 }
 
 abstract class BoxedColumn<A extends num> extends Column<A> {
+  dynamic foldRow(int row, na, nm, f(a)) {
+    var c = apply(row);
+    if (c == NA) {
+      return na();
+    } else if (c == NM) {
+      return nm();
+    } else {
+      return f(c);
+    }
+  }
+
+  bool forEach(int from, int until, int rows(int a), f(int a, A b),
+      [bool abortOnNM = true]) {
+    bool nm = false;
+    var i = from;
+    while (i < until && !nm) {
+      var row = rows(i);
+      var v = apply(row);
+      if (v is Value) {
+        f(i, v.get);
+      } else if (v == NM) {
+        nm = abortOnNM;
+      }
+      i += 1;
+    }
+
+    return !nm;
+  }
+
   /// Maps the cells of this [Column] using `f`. This method will always
   /// force the column into an eval column and should be used with caution.
   Column cellMap(Cell f(Cell<A> a));
@@ -262,6 +239,39 @@ abstract class UnboxedColumn<A extends Comparable> extends Column<A> {
   bool isValueAt(int row);
   NonValue nonValueAt(int row);
   A valueAt(int row);
+
+  dynamic foldRow(int row, na, nm, f(a)) {
+    var r = row;
+    if (isValueAt(r)) {
+      return f(valueAt(r));
+    } else {
+      var nv = nonValueAt(r);
+      if (nv == NA) {
+        return na();
+      } else if (nv == NM) {
+        return nm();
+      } else {
+        throw nv;
+      }
+    }
+  }
+
+  bool forEach(int from, int until, int rows(int a), f(int a, A b),
+      [bool abortOnNM = true]) {
+    bool nm = false;
+    var i = from;
+    while (i < until && !nm) {
+      var row = rows(i);
+      if (isValueAt(row)) {
+        f(i, valueAt(row));
+      } else if (nonValueAt(row) == NM) {
+        nm = abortOnNM;
+      }
+      i += 1;
+    }
+
+    return !nm;
+  }
 
   Cell<A> apply(int row) {
     if (isValueAt(row)) {
