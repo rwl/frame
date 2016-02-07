@@ -2,6 +2,7 @@ library frame.test.column;
 
 import 'package:test/test.dart';
 import 'package:frame/frame.dart';
+import 'package:quiver/iterables.dart' show range;
 
 import 'generators.dart' as gen;
 
@@ -59,14 +60,13 @@ class ColumnTest<A extends Comparable> {
             isTrue);
       });
     });
-  }
-/*
+
     group("memo columns", () {
       test("only evaluate values at most once", () {
         var counter = 0;
-        val col = Column.eval((row) {
+        var col = new Column.eval((row) {
           counter += 1;
-          return Value(row);
+          return new Value(row);
         }).memoize();
         col.apply(0);
         col.apply(0);
@@ -82,8 +82,8 @@ class ColumnTest<A extends Comparable> {
     });
 
     test("orElse with longer right side and NM", () {
-      var b = new Column<int>();
-      var c = new Column<int>([NA, NM, NM]);
+      var b = new Column<int>.fromCells([]);
+      var c = new Column<int>.fromCells([NA, NM, NM]);
       expect(b.orElse(c).apply(1), equals(NM));
     });
 
@@ -107,304 +107,300 @@ class ColumnTest<A extends Comparable> {
   }
 
   baseColumnSpec(Column<A> mkCol(Iterable<Cell<A>> cells)) {
-    Gen<Column<A>> genColumn(Gen<A> gen) {
+    List<Cell<A>> slice(Column col, Iterable<int> rows) {
+      return rows.map((i) => col.apply(i)).toList();
+    }
+
+//  Gen<Column<A>> genColumn(Gen<A> gen) {
 //    for {
 //      cellValues <- Gen.listOf(CellGenerators.genCell(gen, (2, 1, 1)))
 //    } yield mkCol(cellValues: _*)
-    }
+//  }
 
-    Gen<Mask> genMask() {
+//  Gen<Mask> genMask() {
 //    for {
 //      rows0 <- arbitrary[List[Int]]
 //      rows = rows0.map(_ & 0xFF)
 //    } yield Mask(rows: _*)
-    }
+//  }
 
-//  implicit def arbColumn[A: Arbitrary]: Arbitrary[Column<A>] = Arbitrary(genColumn(arbitrary<A>))
-
-//  implicit val arbMask: Arbitrary[Mask] = Arbitrary(genMask)
-
-    Column<A> column;
+    Column<int> col;
+    List<int> indices, rows;
+    int row;
     Mask mask;
-    setUp(() {
-      column = genColumn();
-      mask = genMask();
-    });
+//    setUp(() {
+//      column = genColumn();
+//      mask = genMask();
+//    });
 
     group("foldRow", () {
       test("return value for Value row", () {
-        var col = mkCol(NA, Value(42));
+        var col = mkCol([NA, new Value(42)]);
         expect(col.foldRow(1, 0, 0, (a) => 2 + a), equals(44));
       });
 
       test("return NA value for NA row", () {
-        var col = mkCol(NA, NA);
+        var col = mkCol([NA, NA]);
         expect(col.foldRow(1, true, false, (_) => false), isTrue);
       });
 
       test("return NM value for NM row", () {
-        var col = mkCol(NA, NM);
+        var col = mkCol([NA, NM]);
         expect(col.foldRow(1, false, true, (_) => false), isTrue);
       });
 
-      test("fold rows of columns", () {
+//      test("fold rows of columns", () {
 //      (col: Column[Int], indices: List[Int]) =>
 //      var expected = indices.map((i) => col(i)).map {
 //        case Value(a) => a.toString
 //        case NA => "NA"
 //        case NM => "NM"
 //      }
-        var actual = indices.map((i) => col.foldRow(i, "NA", "NM", i.toString));
-        expect(actual, equals(expected));
-      });
+//        var actual = indices.map((i) => col.foldRow(i, "NA", "NM", i.toString));
+//        expect(actual, equals(expected));
+//      });
     });
 
     group("foreach", () {
       test("bail early on NM values", () {
-        var col = mkCol(Value(1), Value(2), NM, Value(4));
-        col.foreach(0, 5, (n) => n, (i, n) {
+        var col = mkCol([new Value(1), new Value(2), NM, new Value(4)]);
+        col.forEach(0, 5, (n) => n, (i, n) {
           if (n == 4) {
-            throw new Exception();
+            fail("n == 4");
           }
         });
-        ok();
       });
 
       test("skip NA values", () {
-        var col = mkCol(Value(1), NA, Value(2), NA, Value(3));
-        var bldr = List.newBuilder();
-        col.foreach(0, 5, (n) => 4 - n, (i, n) {
-          bldr += n;
+        var col = mkCol([new Value(1), NA, new Value(2), NA, new Value(3)]);
+        var bldr = [];
+        col.forEach(0, 5, (n) => 4 - n, (i, n) {
+          bldr.add(n);
         });
-        expect(bldr.result(), equals([3, 2, 1]));
+        expect(bldr, equals([3, 2, 1]));
       });
 
       test("work with functions that can't be inlined", () {
-        var col = mkCol(Value(1), NA, Value(2), NA, Value(3));
-        var bldr = List.newBuilder[Int];
-        void f(int a, int b) => (i, n) => bldr += n;
-        col.foreach(0, 5, (n) => 4 - n, f);
-        expect(bldr.result(), [3, 2, 1]);
+        var col = mkCol([new Value(1), NA, new Value(2), NA, new Value(3)]);
+        var bldr = <int>[];
+        void f(int i, n) => bldr.add(n);
+        col.forEach(0, 5, (n) => 4 - n, f);
+        expect(bldr, [3, 2, 1]);
       });
     });
 
     group("map", () {
       test("map each cell in the column", () {
-//      (col: Column[Int], indices: List[Int]) =>
-        String f(int _) => (n) => (n * 23).toString;
+        String f(int n) => (n * 23).toString();
         var col0 = col.map(f);
-        expect(indices.map((i) => col(i)).map((c) => c.map(f)),
+        expect(indices.map((i) => col.apply(i)).map((c) => c.map(f)),
             equals(indices.map((i) => col0(i))));
       });
     });
 
     group("flatMap", () {
       test("flatMap each cell in the column", () {
-//      (col: Column[Int], indices: List[Int]) =>
-        Cell<String> f(int i) => (n) {
-              if (n % 3 == 0) {
-                return Value((n * 23).toString);
-              } else if (n % 3 == 1) {
-                return NA;
-              } else {
-                return NM;
-              }
-            };
+        Cell<String> f(int n) {
+          if (n % 3 == 0) {
+            return new Value((n * 23).toString());
+          } else if (n % 3 == 1) {
+            return NA;
+          } else {
+            return NM;
+          }
+        }
+        ;
         var col0 = col.flatMap(f);
-        expect(indices.map((i) => col(i)).map((c) => c.flatMap(f)),
+        expect(indices.map((i) => col.apply(i)).map((c) => c.flatMap(f)),
             equals(indices.map((i) => col0(i))));
       });
     });
 
     group("reindex", () {
       test("return empty column for empty array", () {
-        var col = mkCol(Value(1), Value(2)).reindex(Array());
-        range(-10, 11).map((i) => col(i)).forall((c) => expect(c, equals(NA)));
+        var col = mkCol([new Value(1), new Value(2)]).reindex([]);
+        range(-10, 11).map((i) => col(i)).forEach((c) => expect(c, equals(NA)));
       });
 
       test("reindex rearranges values", () {
-        var col = mkCol(Value(1), Value(2), Value(3));
-        expect(col.reindex(Array(1, 2, 0)).slice(range(3)),
-            equals([Value(2), Value(3), Value(1)]));
+        var col = mkCol([new Value(1), new Value(2), new Value(3)]);
+        expect(slice(col.reindex([1, 2, 0]), range(3)),
+            equals([new Value(2), new Value(3), new Value(1)]));
       });
 
       test("reindex rearranges NMs", () {
-        var col = mkCol(Value(1), NM, Value(3), NM);
-        expect(col.reindex([1, 2, 3, 0]).slice(range(4)),
-            equals([NM, Value(3), NM, Value(1)]));
+        var col = mkCol([new Value(1), NM, new Value(3), NM]);
+        expect(slice(col.reindex([1, 2, 3, 0]), range(4)),
+            equals([NM, new Value(3), NM, new Value(1)]));
       });
 
       test("reindex with negative indices", () {
-        var col = mkCol(Value(1), Value(2));
-        expect(col.reindex([-1, 0, -1]).slice(range(3)),
-            equals([NA, Value(1), NA]));
+        var col = mkCol([new Value(1), new Value(2)]);
+        expect(slice(col.reindex([-1, 0, -1]), range(3)),
+            equals([NA, new Value(1), NA]));
       });
     });
 
     group("mask", () {
       test("turn all masked rows into NAs", () {
-//      (col: Column[Int], mask: Mask) =>
         var masked = col.mask(mask);
-        mask.toSet().forall((i) => expect(masked(i), equals(NA)));
+        mask.toSet().forEach((i) => expect(masked(i), equals(NA)));
       });
 
       test("retain unmasked rows as-is", () {
-//      (col: Column[Int], rows: List[Int], mask: Mask) =>
-        var validRows = rows.toSet(); // -- mask.toSet();
-        val masked = col.mask(mask);
-        validRows.forall((i) => col(i) == masked(i));
+        var validRows = rows.toSet().intersection(mask.toSet());
+        var masked = col.mask(mask);
+        validRows.forEach((i) => col.apply(i) == masked(i));
       });
     });
 
     group("setNA", () {
       test("set the specified row to NA", () {
-//      (col: Column[Int], row: Int) =>
         var col0 = col.setNA(row);
         expect(col0(row), equals(NA));
       });
 
       test("not modify other rows", () {
-//      (col: Column[Int], row: Int, rows: List[Int]) =>
-        var validRows = rows.toSet() - row;
+        var validRows = rows.toSet()..remove(row);
         var col0 = col.setNA(row);
-        validRows.forall((i) => col(i) == col0(i));
+        validRows.forEach((i) => col.apply(i) == col0.apply(i));
       });
     });
 
     group("force", () {
       test("return empty column when size is 0", () {
-//      (col: Column[Int], indices: List[Int]) =>
         var empty = col.force(0);
-        indices.map((i) => empty(i)).forall((e) => e == NA);
+        indices
+            .map((i) => empty.apply(i))
+            .forEach((cell) => expect(cell, equals(NA)));
       });
 
       test("not mess with values in range", () {
-//      (col: Column[Int], blen: Byte) =>
+        /*Byte*/ int blen = gen.r.nextInt(gen.maxl);
         var len = blen.toInt().abs();
-        expect(col.force(len).slice(range(len)), equals(col.slice(range(len))));
+        expect(
+            slice(col.force(len), range(len)), equals(slice(col, range(len))));
       });
 
       test("NA all values out of range", () {
-//      (col: Column[Int], len0: Int, indices: List[Int]) =>
+        int len0 = gen.r.nextInt(gen.maxl);
         var len = len0 & 0x7FFFF;
-        col
-            .force(len)
-            .slice(indices.filter((i) => i >= len))
-            .forall((v) => v == NA);
+        slice(col.force(len), indices.where((i) => i >= len))
+            .forEach((v) => v == NA);
       });
     });
 
     group("shift", () {
       test("shift all rows", () {
-//      (col: Column[Int], rows0: Int, indices0: List[Int]) =>
+        int rows0 = gen.r.nextInt(gen.maxl);
         var rows = rows0 % 100; // Keep it sane for DenseColumns sake.
-        var indices = indices0
-            .filter((i) => i < Int.MaxValue - 100)
-            .filter((i) => i > Int.MinValue + 100);
+        indices = indices
+            .where((i) => i < MAX_INT - 100)
+            .where((i) => i > MIN_INT + 100);
         var shifted = col.shift(rows);
-        expect(indices.map((i) => shifted(i)),
-            equals(indices.map((i) => i - rows).map((i) => col(i))));
+        expect(indices.map((i) => shifted.apply(i)),
+            equals(indices.map((i) => i - rows).map((i) => col.apply(i))));
       });
     });
 
     group("orElse", () {
       test("be left biased", () {
-        var a = mkCol(Value(0), Value(1), Value(2));
-        var b = mkCol(Value(0), Value(-1), Value(-2));
-        expect(a.orElse(b).apply(1), equals(Value(1)));
-        expect(a.orElse(b).apply(2), equals(Value(2)));
-        expect(b.orElse(a).apply(1), equals(Value(-1)));
-        expect(b.orElse(a).apply(2), equals(Value(-2)));
+        var a = mkCol([new Value(0), new Value(1), new Value(2)]);
+        var b = mkCol([new Value(0), new Value(-1), new Value(-2)]);
+        expect(a.orElse(b).apply(1), equals(new Value(1)));
+        expect(a.orElse(b).apply(2), equals(new Value(2)));
+        expect(b.orElse(a).apply(1), equals(new Value(-1)));
+        expect(b.orElse(a).apply(2), equals(new Value(-2)));
       });
 
       test("ignore non values", () {
-        var a = mkCol(Value(1), Value(2), NA, NA, NM, NM, NA, NM);
-        var b = mkCol(NA, NM, NA, NM, NA, NM, Value(1), Value(2));
+        var a = mkCol([new Value(1), new Value(2), NA, NA, NM, NM, NA, NM]);
+        var b = mkCol([NA, NM, NA, NM, NA, NM, new Value(1), new Value(2)]);
         var col = a.orElse(b);
 
-        expect(col.apply(0), equals(Value(1)));
-        expect(col.apply(1), equals(Value(2)));
+        expect(col.apply(0), equals(new Value(1)));
+        expect(col.apply(1), equals(new Value(2)));
         expect(col.apply(2), equals(NA));
         expect(col.apply(3), equals(NM));
         expect(col.apply(4), equals(NM));
         expect(col.apply(5), equals(NM));
-        expect(col.apply(6), equals(Value(1)));
-        expect(col.apply(7), equals(Value(2)));
+        expect(col.apply(6), equals(new Value(1)));
+        expect(col.apply(7), equals(new Value(2)));
       });
     });
 
     group("zipMap", () {
       test("promote all NAs with spec type", () {
-        var na = mkCol[Int](NA);
-        var nm = mkCol[Int](NM);
-        var value = mkCol[Int](Value(1));
+        Column<int> na = mkCol([NA]);
+        Column<int> nm = mkCol([NM]);
+        Column<int> value = mkCol([new Value(1)]);
 
-        expect(na.zipMap(na, (a, b) => a + b, 0), equals(NA));
-        expect(na.zipMap(nm, (a, b) => a + b, 0), equals(NA));
-        expect(nm.zipMap(na, (a, b) => a + b, 0), equals(NA));
-        expect(nm.zipMap(value, (a, b) => a + b, 0), equals(NM));
-        expect(value.zipMap(na, (a, b) => a + b, 0), equals(NA));
+        expect(na.zipMap(na, (a, b) => a + b).apply(0), equals(NA));
+        expect(na.zipMap(nm, (a, b) => a + b).apply(0), equals(NA));
+        expect(nm.zipMap(na, (a, b) => a + b).apply(0), equals(NA));
+        expect(nm.zipMap(value, (a, b) => a + b).apply(0), equals(NM));
+        expect(value.zipMap(na, (a, b) => a + b).apply(0), equals(NA));
       });
 
       test("promote all NAs with unspec type", () {
-        var na = mkCol[String](NA);
-        var nm = mkCol[String](NM);
-        var value = mkCol[String](Value("x"));
+        Column<String> na = mkCol([NA]);
+        Column<String> nm = mkCol([NM]);
+        Column<String> value = mkCol([new Value("x")]);
 
-        expect(na.zipMap(na, (a, b) => a + b, 0), equals(NA));
-        expect(na.zipMap(nm, (a, b) => a + b, 0), equals(NA));
-        expect(nm.zipMap(na, (a, b) => a + b, 0), equals(NA));
-        expect(nm.zipMap(value, (a, b) => a + b, 0), equals(NM));
-        expect(value.zipMap(na, (a, b) => a + b, 0), equals(NA));
+        expect(na.zipMap(na, (a, b) => a + b).apply(0), equals(NA));
+        expect(na.zipMap(nm, (a, b) => a + b).apply(0), equals(NA));
+        expect(nm.zipMap(na, (a, b) => a + b).apply(0), equals(NA));
+        expect(nm.zipMap(value, (a, b) => a + b).apply(0), equals(NM));
+        expect(value.zipMap(na, (a, b) => a + b).apply(0), equals(NA));
       });
 
       test("NM if both are NM", () {
-        var nm0 = mkCol[String](NM);
-        var nm1 = mkCol[Int](NM);
+        Column<String> nm0 = mkCol([NM]);
+        Column<int> nm1 = mkCol([NM]);
 
-        expect(nm0.zipMap(nm1, (a, b) => a + b, 0), equals(NM));
-        expect(nm1.zipMap(nm0, (a, b) => a + b, 0), equals(NM));
+        expect(nm0.zipMap(nm1, (a, b) => a + b).apply(0), equals(NM));
+        expect(nm1.zipMap(nm0, (a, b) => a + b).apply(0), equals(NM));
       });
 
       test("apply function if both are values", () {
-        var col0 = mkCol(Value(1), NA, NM);
-        var col1 = mkCol(Value(3.0), Value(2.0), NA);
-        var col2 = mkCol(NA, Value("x"), NM);
+        var col0 = mkCol([new Value(1), NA, NM]);
+        var col1 = mkCol([new Value(3.0), new Value(2.0), NA]);
+        var col2 = mkCol([NA, new Value("x"), NM]);
 
-        expect(col0.zipMap(col0, (a, b) => a + b).slice(range(4)),
-            equals([Value(2), NA, NM, NA]));
-        expect(col0.zipMap(col1, (a, b) => a + b).slice(range(4)),
-            equals([Value(4.0), NA, NA, NA]));
-        expect(col0.zipMap(col2, (a, b) => a + b).slice(range(4)),
+        expect(slice(col0.zipMap(col0, (a, b) => a + b), range(4)),
+            equals([new Value(2), NA, NM, NA]));
+        expect(slice(col0.zipMap(col1, (a, b) => a + b), range(4)),
+            equals([new Value(4.0), NA, NA, NA]));
+        expect(slice(col0.zipMap(col2, (a, b) => a + b), range(4)),
             equals([NA, NA, NM, NA]));
-        expect(col1.zipMap(col0, (a, b) => a + b).slice(range(4)),
-            equals([Value(4.0), NA, NA, NA]));
-        expect(col1.zipMap(col1, (a, b) => a + b).slice(range(4)),
-            equals([Value(6.0), Value(4.0), NA, NA]));
-        expect(col1.zipMap(col2, (a, b) => a + b).slice(range(4)),
-            equals([NA, Value("2.0x"), NA, NA]));
-        expect(col2.zipMap(col0, (a, b) => a + b).slice(range(4)),
+        expect(slice(col1.zipMap(col0, (a, b) => a + b), range(4)),
+            equals([new Value(4.0), NA, NA, NA]));
+        expect(slice(col1.zipMap(col1, (a, b) => a + b), range(4)),
+            equals([new Value(6.0), new Value(4.0), NA, NA]));
+        expect(slice(col1.zipMap(col2, (a, b) => a + b), range(4)),
+            equals([NA, new Value("2.0x"), NA, NA]));
+        expect(slice(col2.zipMap(col0, (a, b) => a + b), range(4)),
             equals([NA, NA, NM, NA]));
-        expect(col2.zipMap(col1, (a, b) => a + b).slice(range(4)),
-            equals([NA, Value("x2.0"), NA, NA]));
-        expect(col2.zipMap(col2, (a, b) => a + b).slice(range(4)),
-            equals([NA, Value("xx"), NM, NA]));
+        expect(slice(col2.zipMap(col1, (a, b) => a + b), range(4)),
+            equals([NA, new Value("x2.0"), NA, NA]));
+        expect(slice(col2.zipMap(col2, (a, b) => a + b), range(4)),
+            equals([NA, new Value("xx"), NM, NA]));
       });
 
       test("conform to same semantics as Cell#zipMap", () {
-//      (a: Column[Int], b: Column[Double], indices: List[Int]) =>
-        var col = a.zipMap(b, (a, b) => a + b);
+        Column<int> a;
+        Column<double> b;
+        var col = a.zipMap(b, (x, y) => x + y);
         expect(
             indices.map((i) => col(i)),
-            equals(
-                indices.map((row) => a(row).zipMap(b(row), (a, b) => a + b))));
+            equals(indices.map(
+                (row) => a.apply(row).zipMap(b.apply(row), (x, y) => x + y))));
       });
     });
 
     group("memoize", () {
       test("calculate values at most once (pessimistic)", () {
-//      (col: Column[Int], indices: List[Int]) =>
-        var hit = false;
+        bool hit = false;
         var col0 = col.map((a) {
           hit = true;
           return a;
@@ -417,8 +413,7 @@ class ColumnTest<A extends Comparable> {
 
       test("calculate values at most once (optimistic, no thread contention)",
           () {
-//      (col: Column[Int], indices: List[Int]) =>
-        var hit = false;
+        bool hit = false;
         var col0 = col.map((a) {
           hit = true;
           return a;
@@ -437,18 +432,25 @@ class ColumnTest<A extends Comparable> {
 
     group("dense columns", () {
       test("manually spec from dense constructor", () {
-        expect(
-            Column.dense(["1", "2", "3"]), new isInstanceOf<GenericColumn>());
-        expect(Column.dense([1, 2, 3]), new isInstanceOf<IntColumn>());
-        expect(Column.dense([1, 2, 3]), new isInstanceOf<LongColumn>());
-        expect(Column.dense([1.0, 2.0, 3.0]), new isInstanceOf<DoubleColumn>());
+        expect(new Column.dense(["1", "2", "3"]),
+            new isInstanceOf<GenericColumn>());
+        expect(new Column.dense([1, 2, 3], type: int),
+            new isInstanceOf<IntColumn>());
+        expect(new Column.dense([1, 2, 3], type: int),
+            new isInstanceOf<LongColumn>());
+        expect(new Column.dense([1.0, 2.0, 3.0], type: double),
+            new isInstanceOf<DoubleColumn>());
       });
 
       test("manually spec from default constructor", () {
-        expect(Column(NA, Value("x"), NM), new isInstanceOf<GenericColumn>());
-        expect(Column(NA, Value(1), NM), new isInstanceOf<IntColumn>());
-        expect(Column(NA, Value(1), NM), new isInstanceOf<LongColumn>());
-        expect(Column(NA, Value(1.0), NM), new isInstanceOf<DoubleColumn>());
+        expect(new Column.fromCells([NA, new Value("x"), NM]),
+            new isInstanceOf<GenericColumn>());
+        expect(new Column.fromCells([NA, new Value(1), NM]),
+            new isInstanceOf<IntColumn>());
+        expect(new Column.fromCells([NA, new Value(1), NM]),
+            new isInstanceOf<LongColumn>());
+        expect(new Column.fromCells([NA, new Value(1.0), NM]),
+            new isInstanceOf<DoubleColumn>());
       });
 
       test("use AnyColumn when type is not known and not-spec", () {
@@ -584,7 +586,6 @@ class ColumnTest<A extends Comparable> {
       });
     });
   }
-   */
 }
 
 //class ColumnOps<A> {

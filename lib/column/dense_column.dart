@@ -269,6 +269,41 @@ class GenericColumn<A> extends DenseColumn<A> {
     }
   }
 
-  Column orElse(Column that) =>
-      DenseColumn.orElseGeneric(values, naValues, nmValues, that);
+  Column orElse(Column rhs) {
+    if (rhs is DenseColumn) {
+      var bldr = new ColumnBuilder();
+      var len = math.max(values.length, rhs.values.length);
+      var i = 0;
+      while (i < len) {
+        if (i < values.length && !naValues[i] && !nmValues[i]) {
+          bldr.addValue(values[i]);
+        } else if (rhs.isValueAt(i)) {
+          bldr.addValue(rhs.valueAt(i));
+        } else if (nmValues[i]) {
+          bldr.addNM();
+        } else {
+          bldr.add(rhs.nonValueAt(i));
+        }
+        i += 1;
+      }
+      return bldr.result();
+    } else {
+      // TODO: Add case for unboxed columns.
+      return new Column.eval((row) {
+        if (row >= 0 &&
+            row < values.length &&
+            !naValues[row] &&
+            !nmValues[row]) {
+          return new Value(values[row]);
+        } else {
+          var cell = rhs.apply(row);
+          if (cell == NA && nmValues[row]) {
+            return NM;
+          } else {
+            return cell;
+          }
+        }
+      });
+    }
+  }
 }

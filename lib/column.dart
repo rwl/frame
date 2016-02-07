@@ -197,16 +197,16 @@ abstract class Column<A extends Comparable> {
   /// The [NM] mask (`nm`) always takes precedence over the [NA] mask
   /// (`na`).  If a row is outside of the range 0 until `values.length`, then if
   /// `nm(row)` is true, [NM] will be returned, otherwise [NA] is returned.
-  factory Column.dense(Type typ, List<A> values, [Mask na, Mask nm]) {
+  factory Column.dense(List<A> values, {Mask na, Mask nm, Type type}) {
     if (na == null) {
       na = new Mask.empty();
     }
     if (nm == null) {
       nm = new Mask.empty();
     }
-//    if (typ == double) {
+//    if (type == double) {
 //      return new DoubleColumn(values, na, nm);
-//    } else if (typ == int) {
+//    } else if (type == int) {
 //      return new IntColumn(values, na, nm);
 //    } else {
     return new GenericColumn<A>(values, na, nm);

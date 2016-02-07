@@ -17,7 +17,11 @@
 part of frame;
 
 abstract class MemoizingColumn<A extends Comparable> extends BoxedColumn<A> {
-  EvalColumn<A> _eval = new EvalColumn((int a) => apply(a));
+  EvalColumn<A> _eval;
+
+  MemoizingColumn() {
+    _eval = new EvalColumn((int a) => apply(a));
+  }
 
   Column cellMap(Cell f(Cell<A> c)) => _eval.cellMap(f);
 
