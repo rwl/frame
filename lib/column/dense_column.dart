@@ -16,16 +16,24 @@
 
 part of frame;
 
-abstract class DenseColumn<A> extends UnboxedColumn<A> {
-  DenseColumn();
+abstract class DenseColumn<A extends Comparable> extends UnboxedColumn<A> {
+  List<A> get values;
+  final Mask naValues;
+  final Mask nmValues;
 
-  List get values;
-  Mask get naValues;
-  Mask get nmValues;
+  DenseColumn(this.naValues, this.nmValues);
 
   _valid(int row) => row >= 0 && row < values.length;
+
   bool isValueAt(int row) => _valid(row) && !naValues[row] && !nmValues[row];
+
   NonValue nonValueAt(int row) => nmValues[row] ? NM : NA;
+
+  A valueAt(int row) => values[row];
+
+  List<A> _mkList(int size);
+  Column<A> _mkCol(List<A> values, Mask naValues, Mask nmValues);
+  ColumnBuilder<A> _mkColBldr();
 
   Column<A> filter(bool p(A a)) {
     var na = new MaskBuilder();
@@ -53,7 +61,7 @@ abstract class DenseColumn<A> extends UnboxedColumn<A> {
   Column<A> memoize([bool optimistic = false]) => this;
 
   Column flatMap(Cell f(A a)) {
-    var bldr = new ColumnBuilder();
+    var bldr = new AnyColumnBuilder();
     var i = 0;
     while (i < values.length) {
       if (nmValues[i]) {
@@ -87,16 +95,16 @@ abstract class DenseColumn<A> extends UnboxedColumn<A> {
     if (that is DenseColumn) {
       return _zipMap(this, that, f);
     } else {
-      return _zipMap(this, that.force(this.values.length) as DenseColumn, f);
+      return _zipMap(this, that.force(values.length) as DenseColumn, f);
     }
   }
 
-  Column _zipMap(DenseColumn<A> _lhs, DenseColumn _rhs, dynamic f(A a, b)) {
+  static Column _zipMap(DenseColumn _lhs, DenseColumn _rhs, dynamic f(a, b)) {
     var _len = math.min(_lhs.values.length, _rhs.values.length);
     var na = _lhs.naValues | _rhs.naValues;
     var nm = (_lhs.nmValues | _rhs.nmValues).filter((i) => i < _len && !na(i));
 
-    List<A> lhs = _lhs.values;
+    List lhs = _lhs.values;
     List rhs = _rhs.values;
 
     var len = math.min(lhs.length, rhs.length);
@@ -110,7 +118,7 @@ abstract class DenseColumn<A> extends UnboxedColumn<A> {
           return loopAny(xs, i + 1);
         }
       } else {
-        return AnyColumn(xs, na, nm);
+        return new AnyColumn(xs, na, nm);
       }
     }
 
@@ -174,156 +182,7 @@ abstract class DenseColumn<A> extends UnboxedColumn<A> {
     return loop(0);
   }
 
-  @override
-  String toString() {
-    var len = nmValues.max().map((v) => v + 1).getOrElse(() => values.length);
-    return "Column(" +
-        range(len).map((i) => apply(i).toString()).join(", ") +
-        ")";
-  }
-}
-
-class IntColumn extends DenseColumn<int> {
-  Int32List values;
-  Mask naValues;
-  Mask nmValues;
-
-  IntColumn(this.values, this.naValues, this.nmValues);
-
-  int valueAt(int row) => values[row];
-
-  Column map(dynamic f(int a)) =>
-      DenseColumn.mapInt(values, naValues, nmValues, f);
-
-  Column<int> reindex(List<int> index) =>
-      DenseColumn.reindexInt(index, values, naValues, nmValues);
-
-  static Int32List _copyOf(Int32List l, int size) {
-    var r = new Int32List(size);
-    for (var i = 0; i < math.min(l.length, size); i++) {
-      r[i] = l[i];
-    }
-    return r;
-  }
-
-  Column<int> force(int len) {
-    if (values.length <= len) {
-      var nm = (nmValues.max().getOrElse(() => -1) < len)
-          ? nmValues
-          : nmValues.filter((v) => v < len);
-      return new IntColumn(values, naValues, nm);
-    } else {
-      return new IntColumn(
-          _copyOf(values, len),
-          (values.length < len)
-              ? naValues.inc(new Mask.range(values.length, len))
-              : naValues,
-          nmValues.filter((v) => v < len));
-    }
-  }
-
-  Column orElse(Column that) =>
-      DenseColumn.orElseInt(values, naValues, nmValues, that);
-}
-
-class LongColumn extends DenseColumn<int> {
-  Int64List values;
-  Mask naValues;
-  Mask nmValues;
-
-  LongColumn(this.values, this.naValues, this.nmValues);
-
-  int valueAt(int row) => values[row];
-
-  Column map(dynamic f(int a)) =>
-      DenseColumn.mapLong(values, naValues, nmValues, f);
-
-  Column<int> reindex(List<int> index) =>
-      DenseColumn.reindexLong(index, values, naValues, nmValues);
-
-  static Int64List _copyOf(Int64List l, int size) {
-    var r = new Int64List(size);
-    for (var i = 0; i < math.min(l.length, size); i++) {
-      r[i] = l[i];
-    }
-    return r;
-  }
-
-  Column<int> force(int len) {
-    if (values.length <= len) {
-      var nm = (nmValues.max().getOrElse(() => -1) < len)
-          ? nmValues
-          : nmValues.filter((v) => v < len);
-      return new LongColumn(values, naValues, nm);
-    } else {
-      return new LongColumn(
-          _copyOf(values, len),
-          (values.length < len)
-              ? naValues.inc(new Mask.range(values.length, len))
-              : naValues,
-          nmValues.filter((v) => v < len));
-    }
-  }
-
-  Column orElse(Column that) =>
-      DenseColumn.orElseLong(values, naValues, nmValues, that);
-}
-
-class DoubleColumn extends DenseColumn<double> {
-  Float64List values;
-  Mask naValues;
-  Mask nmValues;
-
-  DoubleColumn(this.values, this.naValues, this.nmValues);
-
-  double valueAt(int row) => values[row];
-
-  Column map(dynamic f(double a)) =>
-      DenseColumn.mapDouble(values, naValues, nmValues, f);
-
-  Column<double> reindex(List<int> index) =>
-      DenseColumn.reindexDouble(index, values, naValues, nmValues);
-
-  static Float64List _copyOf(Float64List l, int size) {
-    var r = new Float64List(size);
-    for (var i = 0; i < math.min(l.length, size); i++) {
-      r[i] = l[i];
-    }
-    return r;
-  }
-
-  Column<double> force(int len) {
-    if (values.length <= len) {
-      var nm = (nmValues.max().getOrElse(() => -1) < len)
-          ? nmValues
-          : nmValues.filter((v) => v < len);
-      return new DoubleColumn(values, naValues, nm);
-    } else {
-      return new DoubleColumn(
-          _copyOf(values, len),
-          (values.length < len)
-              ? naValues.inc(new Mask.range(values.length, len))
-              : naValues,
-          nmValues.filter((v) => v < len));
-    }
-  }
-
-  Column orElse(Column that) =>
-      DenseColumn.orElseDouble(values, naValues, nmValues, that);
-}
-
-class GenericColumn<A> extends DenseColumn<A> {
-  List<A> values;
-  Mask naValues;
-  Mask nmValues;
-
-  GenericColumn(this.values, this.naValues, this.nmValues) : super();
-
-  A valueAt(int row) => values[row];
-
-  Column map(dynamic f(A a)) => _map(values, naValues, nmValues, f);
-
-  Column _map(List<A> values, Mask naValues, Mask nmValues, dynamic f(A a)) {
+  Column map(dynamic f(A a)) {
     Column loopAny(List xs, int i) {
       if (i < xs.length) {
         if (naValues[i] || nmValues[i]) {
@@ -395,36 +254,36 @@ class GenericColumn<A> extends DenseColumn<A> {
     return loop(0);
   }
 
-  Column<A> reindex(List<int> index) =>
-      DenseColumn.reindexGeneric(index, values, naValues, nmValues);
+  Column<A> reindex(List<int> index) {
+    var xs = _copyOf(values, index.length);
+    var na = new MaskBuilder();
+    var nm = new MaskBuilder();
+    var i = 0;
+    while (i < index.length) {
+      var row = index[i];
+      if (nmValues[row]) {
+        nm.add(i);
+      } else if (row >= 0 && row < values.length && !naValues[row]) {
+        xs[i] = values[row];
+      } else {
+        na.add(i);
+      }
+      i += 1;
+    }
+    return _mkCol(xs, na.result(), nm.result());
+  }
 
-  List<A> _copyOf(List<A> l, int size) {
-    var r = new List<A>(size);
-    for (var i = 0; i < math.min(l.length, size); i++) {
+  List _copyOf(List l, int size) {
+    List r = _mkList(size);
+    for (var i = 0; i < l.length && i < size; i++) {
       r[i] = l[i];
     }
     return r;
   }
 
-  Column<A> force(int len) {
-    if (values.length <= len) {
-      var nm = (nmValues.max().getOrElse(() => -1) < len)
-          ? nmValues
-          : nmValues.filter((v) => v < len);
-      return new GenericColumn(values, naValues, nm);
-    } else {
-      return new GenericColumn(
-          _copyOf(values, len),
-          (values.length < len)
-              ? naValues.inc(new Mask.range(values.length, len))
-              : naValues,
-          nmValues.filter((v) => v < len));
-    }
-  }
-
   Column orElse(Column rhs) {
     if (rhs is DenseColumn) {
-      var bldr = new ColumnBuilder();
+      var bldr = _mkColBldr();
       var len = math.max(values.length, rhs.values.length);
       var i = 0;
       while (i < len) {
@@ -459,11 +318,84 @@ class GenericColumn<A> extends DenseColumn<A> {
       });
     }
   }
+
+  Column<A> force(int len) {
+    if (values.length <= len) {
+      var nm = (nmValues.max().getOrElse(() => -1) < len)
+          ? nmValues
+          : nmValues.filter((v) => v < len);
+      return _mkCol(values, naValues, nm);
+    } else {
+      return _mkCol(
+          _copyOf(values, len),
+          (values.length < len)
+              ? naValues.inc(new Mask.range(values.length, len))
+              : naValues,
+          nmValues.filter((v) => v < len));
+    }
+  }
+
+  @override
+  String toString() {
+    var len = nmValues.max().map((v) => v + 1).getOrElse(() => values.length);
+    return "Column(" +
+        range(len).map((i) => apply(i).toString()).join(", ") +
+        ")";
+  }
+}
+
+class IntColumn extends DenseColumn<int> {
+  final Int32List values;
+
+  IntColumn(this.values, Mask naValues, Mask nmValues)
+      : super(naValues, nmValues);
+
+  List<int> _mkList(int size) => new Int32List(size);
+
+  Column<int> _mkCol(Int32List values, Mask naValues, Mask nmValues) =>
+      new IntColumn(values, naValues, nmValues);
+
+  ColumnBuilder<int> _mkColBldr() => new IntColumnBuilder();
+}
+
+class DoubleColumn extends DenseColumn<double> {
+  final Float64List values;
+
+  DoubleColumn(this.values, Mask naValues, Mask nmValues)
+      : super(naValues, nmValues);
+
+  List<double> _mkList(int size) => new Float64List(size);
+
+  Column<double> _mkCol(Float64List values, Mask naValues, Mask nmValues) =>
+      new DoubleColumn(values, naValues, nmValues);
+
+  ColumnBuilder<double> _mkColBldr() => new DoubleColumnBuilder();
+}
+
+class GenericColumn<A extends Comparable> extends DenseColumn<A> {
+  final List<A> values;
+
+  GenericColumn(this.values, Mask naValues, Mask nmValues)
+      : super(naValues, nmValues);
+
+  List<A> _mkList(int size) => new List<A>(size);
+
+  Column<A> _mkCol(List<A> values, Mask naValues, Mask nmValues) =>
+      new GenericColumn<A>(values, naValues, nmValues);
+
+  ColumnBuilder<A> _mkColBldr() => new GenericColumnBuilder();
 }
 
 class AnyColumn extends GenericColumn {
   AnyColumn(List values, Mask naValues, Mask nmValues)
       : super(values, naValues, nmValues);
+
+  List _mkList(int size) => new List(size);
+
+  Column _mkCol(List values, Mask naValues, Mask nmValues) =>
+      new AnyColumn(values, naValues, nmValues);
+
+  ColumnBuilder _mkColBldr() => new AnyColumnBuilder();
 }
 
 List _copyToAnyArray(List xs, int len) {

@@ -304,7 +304,8 @@ class State {
   State(this.groups);
 }
 
-class TestGrouper<K> extends Grouper<K> {
+class TestGrouper<K> {
+  //extends Grouper<K> {
   init() => new State(Vector.empty());
 
   State group(
@@ -319,7 +320,8 @@ class State2 {
   Vector<Cogroup<K>> groups;
 }
 
-class TestCogrouper<K> extends Cogrouper<K> {
+class TestCogrouper<K> {
+  //extends Cogrouper<K> {
   init() => State(Vector.empty);
 
   State2 cogroup(State2 state, List<K> lKeys, List<int> lIdx, int lStart,

@@ -11,15 +11,8 @@ import 'package:quiver/iterables.dart' show range;
 //import 'bitset.dart';
 import 'package:concepts/concepts.dart' show Monoid;
 
-//part 'src/cell.dart';
-//part 'src/column.dart';
-//part 'src/index.dart';
-//part 'src/series.dart';
-//part 'src/frame.dart';
-//
-//part 'src/column/mask.dart';
-//part 'src/column/dense_column.dart';
-//part 'src/column/eval_column.dart';
+part 'index.dart';
+part 'series.dart';
 
 part 'cell.dart';
 part 'column.dart';

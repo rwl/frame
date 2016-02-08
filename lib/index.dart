@@ -22,67 +22,49 @@ abstract class Index<K> extends ListBase<Tuple2<K, int>> {
 
   Index();
 
-  /**
-   * Returns an empty `Index` with the same key type as this.
-   */
-  Index<K> empty() => Index.empty();
+  /// Returns an empty [Index] with the same key type as this.
+  Index<K> empty() => new Index.empty();
 
-  /**
-   * Returns the number of key/row pairs in this index.
-   */
-  int size();
+  /// Returns the number of key/row pairs in this index.
+  int get size;
 
-  /**
-   * Returns an iterator, in traversal order, over the key/row pairs in this
-   * index.
-   */
-  Iterator<Tuple2<K, int>> iterator();
+  /// Returns an iterator, in traversal order, over the key/row pairs
+  /// in this index.
+//  Iterator<Tuple2<K, int>> iterator();
 
-  /**
-   * Returns the key/row pair at position `i`.
-   */
+  /// Returns the key/row pair at position [i].
   Tuple2<K, int> apply(int i) => new Tuple2(keyAt(i), indexAt(i));
 
-  /**
-   * Returns the key at position `i`.
-   */
+  /// Returns the key at position [i].
   K keyAt(int i);
 
-  /**
-   * Returns the row at position `i`.
-   */
+  /// Returns the row at position [i].
   int indexAt(int i);
 
-  /**
-   * Iterate over all key/row pairs in traversal order, calling `f` with each
-   * pair for its side-effects.
-   */
-  Unit foreach(f(Tuple2<K, int> a));
+  /// Iterate over all key/row pairs in traversal order, calling [f] with
+  /// each pair for its side-effects.
+  void forEach(f(Tuple2<K, int> a));
 
-  int findStart_(K k, int i) {
+  int _findStart(K k, int i) {
     if (i > 0 && keys(i - 1) == k) {
-      return findStart(k, i - 1);
+      return _findStart(k, i - 1);
     } else {
       return i;
     }
   }
 
-  int findEnd_(K k, int i) {
+  int _findEnd(K k, int i) {
     if (i < keys.length && keys(i) == k) {
-      return findEnd(k, i + 1);
+      return _findEnd(k, i + 1);
     } else {
       return i;
     }
   }
 
-  /**
-   * Returns the index (in traversal order) of the first key/row pair whose key
-   * is `k`. If no such key exist in this index, then the this returns
-   * `-i - 1`, where `i` is the position in the index where `k` could be
-   * inserted while still maintaining sorted order.
-   *
-   * @param k the key to search for
-   */
+  /// Returns the index (in traversal order) of the first key/row pair whose
+  /// key is [k]. If no such key exist in this index, then the this returns
+  /// `-i - 1`, where `i` is the position in the index where [k] could be
+  /// inserted while still maintaining sorted order.
   int search(K k) {
     var i = Searching.search(keys, k);
     if (i < 0) {
@@ -93,41 +75,31 @@ abstract class Index<K> extends ListBase<Tuple2<K, int>> {
         return -j - 1;
       }
     } else {
-      return indices(findStart(k, i));
+      return indices(_findStart(k, i));
     }
   }
 
-  /**
-   * Returns the position of the first key/row pair with key `k`. If no key/row
-   * pair with key `k` exist in this index, then `None` is returned.
-   *
-   * @param k the key to search for
-   */
+  /// Returns the position of the first key/row pair with key [k]. If no
+  /// key/row pair with key [k] exist in this index, then [None] is returned.
   Option<int> get(K k) {
     var i = search(k);
     return (i >= 0) ? Some(i) : None;
   }
 
-  /**
-   * Returns an index with just the key/row pairs whose key is `k`. If there
-   * are no such pairs, then an empty index is returned.
-   *
-   * @param k the key of the key/row pairs returned
-   */
+  /// Returns an index with just the key/row pairs whose key is [k]. If there
+  /// are no such pairs, then an empty index is returned.
   Index<K> getAll(K k) {
     var i = Searching.search(keys, k);
     if (i >= 0) {
-      val lb = findStart(k, i);
-      val ub = findEnd(k, i + 1);
-      return Index.ordered(keys.slice(lb, ub), indices.slice(lb, ub));
+      var lb = _findStart(k, i);
+      var ub = _findEnd(k, i + 1);
+      return new Index.ordered(keys.slice(lb, ub), indices.slice(lb, ub));
     } else {
       return new Index<K>.empty();
     }
   }
 
-  /**
-   * Returns an index whose traversal order is the reverse of this one's.
-   */
+  /// Returns an index whose traversal order is the reverse of this one's.
   Index<K> reverse() {
     var keys0 = new List<K>(keys.length);
     var indices0 = new List<int>(indices.length);
@@ -139,46 +111,39 @@ abstract class Index<K> extends ListBase<Tuple2<K, int>> {
     return new Index(keys0, indices0);
   }
 
-  /**
-   * Returns this [[Index]] in sorted order, by its keys. This operation runs
-   * in constant time, since it simply "forgets" the traversal ordering, if
-   * one exists.
-   */
-  OrderedIndex<K> sorted() => Index.ordered(keys, indices);
+  /// Returns this [Index] in sorted order, by its keys. This operation runs
+  /// in constant time, since it simply "forgets" the traversal ordering, if
+  /// one exists.
+  OrderedIndex<K> sorted() => new Index.ordered(keys, indices);
 
-  /**
-   * Returns a copy of this Index, but whose rows have been replaced with their
-   * index in the traversal order instead. For example,
-   *
-   * {{{
-   * val index = Index("b" -> 32, "c" -> 9, "a" -> -23)
-   * assert(index.resetIndices == Index("b" -> 0, "c" -> 1, "a" -> 2))
-   * }}}
-   */
+  /// Returns a copy of this Index, but whose rows have been replaced with their
+  /// index in the traversal order instead. For example,
+  ///
+  /// ```
+  /// val index = Index("b" -> 32, "c" -> 9, "a" -> -23)
+  /// assert(index.resetIndices() == Index("b" -> 0, "c" -> 1, "a" -> 2))
+  /// ```
   Index<K> resetIndices();
 
-  /**
-   * Returns 2 arrays that match the key/row pairings, in traversal order.
-   * Namely, the following invariant should hold:
-   *
-   * {{{
-   * val index: Index<K> = ...
-   * val (keys, indices) = index.unzip
-   * val copy = Index(keys, indices)
-   * assert(index == copy)
-   * }}}
-   */
+  /// Returns 2 arrays that match the key/row pairings, in traversal order.
+  /// Namely, the following invariant should hold:
+  ///
+  /// ```
+  /// Index<K> index = ...
+  /// var uz = index.unzip();
+  /// var keys = uz.v1, indices = uz.v2;
+  /// var copy = new Index(keys, indices);
+  /// assert(index == copy)
+  /// ```
   Tuple2<List<K>, List<int>> unzip();
 
-  /**
-   * Returns `true` if this index is in sorted order.
-   */
-  bool isOrdered();
+  /// Returns `true` if this index is in sorted order.
+  bool get isOrdered;
 
   // These must contain both the keys and the indices, in sorted order.
-  List<K> keys_();
-  List<int> indices_();
-  Index<K> withIndices_(List<int> ix);
+  List<K> get _keys;
+  List<int> get _indices;
+  Index<K> _withIndices(List<int> ix);
 
 //  @override
   Unit forEach(f(Tuple2<K, int> a)) => foreach(Function.untupled(f));
@@ -491,15 +456,13 @@ abstract class Grouper<K> {
   State group(State state, List<K> keys, List<int> indices, int start, int end);
 }
 
-/**
- * `Cogrouper` provides the abstraction used by `Index.cogroup` to work with
- * the result of a cogroup. Essentially, the cogroup will initiate some state,
- * then perform a cogroup on the 2 [[Index]]es, with each unique key resulting
- * in one call to `cogroup`. The reason the signature is a bit weird, with
- * the start/end offsets being passed in is to avoid copying and allocation
- * where possible. All implementations of [[Index]] can perform this operation
- * efficiently.
- */
+/// [Cogrouper] provides the abstraction used by [Index.cogroup] to work with
+/// the result of a cogroup. Essentially, the cogroup will initiate some state,
+/// then perform a cogroup on the 2 [Index]es, with each unique key resulting
+/// in one call to `cogroup`. The reason the signature is a bit weird, with
+/// the start/end offsets being passed in is to avoid copying and allocation
+/// where possible. All implementations of [Index] can perform this operation
+/// efficiently.
 abstract class Cogrouper<K> {
   State type;
 
@@ -511,19 +474,19 @@ abstract class Cogrouper<K> {
 
 // We cheat here and use a mutable state because an immutable one would just
 // be too slow.
-class State {
-  mutable.ArrayBuilder<K> keys = mutable.ArrayBuilder.make();
-  mutable.ArrayBuilder<int> lIndices = mutable.ArrayBuilder.make();
-  mutable.ArrayBuilder<Int> rIndices = mutable.ArrayBuilder.make();
+class State<K> {
+  List<K> keys = [];
+  List<int> lIndices = [];
+  List<int> rIndices = [];
 
   add(K k, int l, int r) {
-    keys += k;
-    lIndices += l;
-    rIndices += r;
+    keys.add(k);
+    lIndices.add(l);
+    rIndices.add(r);
   }
 
   Tuple3<List<K>, List<int>, List<int>> result() {
-    return new Tuple3(keys.result(), lIndices.result(), rIndices.result());
+    return new Tuple3(keys, lIndices, rIndices);
   }
 }
 

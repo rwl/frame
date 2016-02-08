@@ -119,7 +119,7 @@ abstract class Column<A extends Comparable> {
   /// Construct a column whose `i`-th row is the `i`-th element in `cells`. All
   /// other rows are [NA].
   factory Column.fromCells(Iterable<Cell<A>> cells) {
-    var bldr = new ColumnBuilder();
+    var bldr = new AnyColumnBuilder();
     cells.forEach((c) => bldr.add(c));
     return bldr.result();
   }
@@ -152,18 +152,17 @@ abstract class Column<A extends Comparable> {
     if (nm == null) {
       nm = new Mask.empty();
     }
-//    if (type == double) {
-//      return new DoubleColumn(values, na, nm);
-//    } else if (type == int) {
-//      return new IntColumn(values, na, nm);
-//    } else {
-    return new GenericColumn<A>(values, na, nm);
-//    }
+    if (values is Int32List) {
+      return new IntColumn(values as Int32List, na, nm) as Column<A>;
+    } else if (values is Float64List) {
+      return new DoubleColumn(values as Float64List, na, nm) as Column<A>;
+    } else {
+      return new GenericColumn<A>(values, na, nm);
+    }
   }
 
   factory Column.fromValues(Iterable<A> values) {
-    return new /*AnyColumn*/ GenericColumn<A>(
-        values.toList(), new Mask.empty(), new Mask.empty());
+    return new AnyColumn(values.toList(), new Mask.empty(), new Mask.empty());
   }
 
   /// Returns a column that returns [NM] for any row in `nmValues` and [NA]
@@ -173,7 +172,7 @@ abstract class Column<A extends Comparable> {
     if (nmValues == null) {
       nmValues = new Mask.empty();
     }
-    return new /*AnyColumn*/ GenericColumn<A>([], new Mask.empty(), nmValues);
+    return new AnyColumn([], new Mask.empty(), nmValues);
   }
 }
 
@@ -186,7 +185,7 @@ class ColumnMonoid<A extends Comparable> implements Monoid<Column<A>> {
   Column<A> merge(Column<A> other) => lhs.orElse(other);
 }
 
-abstract class BoxedColumn<A extends num> extends Column<A> {
+abstract class BoxedColumn<A extends Comparable> extends Column<A> {
   dynamic foldRow(int row, na, nm, f(a)) {
     var c = apply(row);
     if (c == NA) {
@@ -282,11 +281,11 @@ abstract class UnboxedColumn<A extends Comparable> extends Column<A> {
   }
 }
 
-class ColumnBuilder<A extends Comparable> {
+abstract class ColumnBuilder<A extends Comparable> {
   var i = 0;
-  List<A> values = [];
-  MaskBuilder na = new MaskBuilder();
-  MaskBuilder nm = new MaskBuilder();
+  final List<A> values = [];
+  final MaskBuilder na = new MaskBuilder();
+  final MaskBuilder nm = new MaskBuilder();
 
   void addValue(A a) {
     values.add(a);
@@ -315,7 +314,7 @@ class ColumnBuilder<A extends Comparable> {
     }
   }
 
-  Column<A> result() => new GenericColumn(values, na.result(), nm.result());
+  Column<A> result();
 
   void clear() {
     i = 0;
@@ -323,4 +322,23 @@ class ColumnBuilder<A extends Comparable> {
     na.clear();
     nm.clear();
   }
+}
+
+class IntColumnBuilder extends ColumnBuilder<int> {
+  IntColumn result() =>
+      new IntColumn(new Int32List.fromList(values), na.result(), nm.result());
+}
+
+class DoubleColumnBuilder extends ColumnBuilder<double> {
+  DoubleColumn result() => new DoubleColumn(
+      new Float64List.fromList(values), na.result(), nm.result());
+}
+
+class GenericColumnBuilder<A extends Comparable> extends ColumnBuilder<A> {
+  GenericColumn<A> result() =>
+      new GenericColumn<A>(values, na.result(), nm.result());
+}
+
+class AnyColumnBuilder extends ColumnBuilder {
+  AnyColumn result() => new AnyColumn(values, na.result(), nm.result());
 }
