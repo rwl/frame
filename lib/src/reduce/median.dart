@@ -93,7 +93,7 @@ class Median<A extends Field, Order, ClassTag> extends SimpleReducer<A, A> {
     }
   }
 
-  Median(List<A> arr, /*implicit*/ A choosePivot(List<A> l)) {
+  _Median(List<A> arr, /*implicit*/ A choosePivot(List<A> l)) {
     if (arr.size % 2 == 0) {
       var left,
           right =
