@@ -1,5 +1,6 @@
 name: frame
 dependencies:
+  benchmark_harness: any
   bit_set: any
   collection: any
   concepts: any
