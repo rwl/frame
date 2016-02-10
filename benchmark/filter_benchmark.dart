@@ -26,14 +26,14 @@ class EvalColumnFilterBenchmark extends ColumnFilterBenchmark {
   run() => Data.work(data.evalColumn.filter(data.p), data.size);
 }
 
-class OptimisticMemoizedColumnFilterBenchmark extends ColumnFilterBenchmark {
-  OptimisticMemoizedColumnFilterBenchmark() : super('optimisticMemoized');
+class OptMemoColumnFilterBenchmark extends ColumnFilterBenchmark {
+  OptMemoColumnFilterBenchmark() : super('optimisticMemoized');
 
   run() => Data.work(data.optMemoColumn.filter(data.p), data.size);
 }
 
-class PessimisticMemoizedColumnFilterBenchmark extends ColumnFilterBenchmark {
-  PessimisticMemoizedColumnFilterBenchmark() : super('pessimisticMemoized');
+class PesMemoColumnFilterBenchmark extends ColumnFilterBenchmark {
+  PesMemoColumnFilterBenchmark() : super('pessimisticMemoized');
 
   run() => Data.work(data.pesMemoColumn.filter(data.p), data.size);
 }
@@ -54,6 +54,6 @@ class FilterData extends Data {
 main() {
   new DenseColumnFilterBenchmark().report();
   new EvalColumnFilterBenchmark().report();
-  new OptimisticMemoizedColumnFilterBenchmark().report();
-  new PessimisticMemoizedColumnFilterBenchmark().report();
+  new OptMemoColumnFilterBenchmark().report();
+  new PesMemoColumnFilterBenchmark().report();
 }

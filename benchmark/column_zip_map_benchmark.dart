@@ -1,22 +1,26 @@
+import 'dart:math' as math;
+
 import 'package:frame/frame.dart';
 import 'package:benchmark_harness/benchmark_harness.dart';
+import 'package:quiver/iterables.dart' show range;
 
 import 'data.dart';
 
-class DenseColumnZipMapBenchmark extends BenchmarkBase {
-  const DenseColumnZipMapBenchmark() : super("DenseColumnZipMapBenchmark");
+abstract class DenseColumnZipMapBenchmark extends BenchmarkBase {
+  DenseZipMapData data;
 
-  static void main() {
-    new DenseColumnZipMapBenchmark().report();
+  DenseColumnZipMapBenchmark(String name)
+      : super("DenseColumnZipMapBenchmark.$name");
+
+  void setup() {
+    data = new DenseZipMapData();
   }
+}
 
-  void run() {}
+class ZipMapArrayBenchmark extends DenseColumnZipMapBenchmark {
+  ZipMapArrayBenchmark() : super('zipMapArray');
 
-  void setup() {}
-
-  void teardown() {}
-
-  zipMapArray(DenseZipMapData data) {
+  void run() {
     var xs = data.data0;
     var ys = data.data1;
     var len = math.min(xs.length, ys.length);
@@ -28,8 +32,12 @@ class DenseColumnZipMapBenchmark extends BenchmarkBase {
     }
     return zs;
   }
+}
 
-  zipMappedMaskedArray(DenseZipMapData data) {
+class ZipMappedMaskedArrayBenchmark extends DenseColumnZipMapBenchmark {
+  ZipMappedMaskedArrayBenchmark() : super('zipMappedMaskedArray');
+
+  void run() {
     var xs = data.data0;
     var ys = data.data1;
     var len = math.min(xs.length, ys.length);
@@ -45,12 +53,18 @@ class DenseColumnZipMapBenchmark extends BenchmarkBase {
     }
     return zs;
   }
+}
 
-  zipMapColumn(DenseZipMapData data) =>
-      data.col0.zipMap(data.col1, (a, b) => a * b);
+class ZipMapColumnBenchmark extends DenseColumnZipMapBenchmark {
+  ZipMapColumnBenchmark() : super('zipMapColumn');
 
-  zipMapSeries(DenseZipMapData data) =>
-      data.series0.zipMap(data.series1, (a, b) => a * b);
+  run() => data.col0.zipMap(data.col1, (a, b) => a * b);
+}
+
+class ZipMapSeriesBenchmark extends DenseColumnZipMapBenchmark {
+  ZipMapSeriesBenchmark() : super('zipMapSeries');
+
+  run() => data.series0.zipMap(data.series1, (a, b) => a * b);
 }
 
 class DenseZipMapData {
@@ -61,12 +75,12 @@ class DenseZipMapData {
 
   DenseZipMapData() {
     var size = 1000;
-    var rng = new Random(42);
+    var rng = new math.Random(42);
 
     data0 = new List.generate(size, (_) => rng.nextDouble());
     na0 = Data.mask(rng, size, 0.1);
     nm0 = Data.mask(rng, size, 0.01);
-    col0 = Column.dense(data0, na0, nm0);
+    col0 = new Column.dense(data0, na0, nm0);
     series0 = new Series(new Index.fromKeys(range(1, size + 1)), col0);
 
     data1 = new List.generate(size, (_) => rng.nextDouble());
@@ -78,5 +92,8 @@ class DenseZipMapData {
 }
 
 main() {
-  DenseColumnZipMapBenchmark.main();
+  new ZipMapArrayBenchmark().report();
+  new ZipMappedMaskedArrayBenchmark().report();
+  new ZipMapColumnBenchmark().report();
+  new ZipMapSeriesBenchmark().report();
 }

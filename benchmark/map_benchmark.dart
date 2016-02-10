@@ -29,18 +29,14 @@ class Eval10MapWithSmallReadBenchmark extends MapWithSmallReadBenchmark {
   run() => Data.work(data.evalColumn.map(data.f), data.size ~/ 10);
 }
 
-class OptimisticMemoized10MapWithSmallReadBenchmark
-    extends MapWithSmallReadBenchmark {
-  OptimisticMemoized10MapWithSmallReadBenchmark()
-      : super('optimisticMemoized10');
+class OptMemo10MapWithSmallReadBenchmark extends MapWithSmallReadBenchmark {
+  OptMemo10MapWithSmallReadBenchmark() : super('optimisticMemoized10');
 
   run() => Data.work(data.optMemoColumn.map(data.f), data.size ~/ 10);
 }
 
-class PessimisticMemoized10MapWithSmallReadBenchmark
-    extends MapWithSmallReadBenchmark {
-  PessimisticMemoized10MapWithSmallReadBenchmark()
-      : super('pessimisticMemoized10');
+class PesMemo10MapWithSmallReadBenchmark extends MapWithSmallReadBenchmark {
+  PesMemo10MapWithSmallReadBenchmark() : super('pessimisticMemoized10');
 
   run() => Data.work(data.pesMemoColumn.map(data.f), data.size ~/ 10);
 }
@@ -57,17 +53,14 @@ class Eval1MapWithSmallReadBenchmark extends MapWithSmallReadBenchmark {
   run() => Data.work(data.evalColumn.map(data.f), data.size ~/ 100);
 }
 
-class OptimisticMemoized1MapWithSmallReadBenchmark
-    extends MapWithSmallReadBenchmark {
-  OptimisticMemoized1MapWithSmallReadBenchmark() : super('optimisticMemoized1');
+class OptMemo1MapWithSmallReadBenchmark extends MapWithSmallReadBenchmark {
+  OptMemo1MapWithSmallReadBenchmark() : super('optimisticMemoized1');
 
   run() => Data.work(data.optMemoColumn.map(data.f), data.size ~/ 100);
 }
 
-class PessimisticMemoized1MapWithSmallReadBenchmark
-    extends MapWithSmallReadBenchmark {
-  PessimisticMemoized1MapWithSmallReadBenchmark()
-      : super('pessimisticMemoized1');
+class PesMemo1MapWithSmallReadBenchmark extends MapWithSmallReadBenchmark {
+  PesMemo1MapWithSmallReadBenchmark() : super('pessimisticMemoized1');
 
   run() => Data.work(data.pesMemoColumn.map(data.f), data.size ~/ 100);
 }
@@ -84,18 +77,14 @@ class Eval50MapWithSmallReadBenchmark extends MapWithSmallReadBenchmark {
   run() => Data.work(data.evalColumn.map(data.f), data.size ~/ 2);
 }
 
-class OptimisticMemoized50MapWithSmallReadBenchmark
-    extends MapWithSmallReadBenchmark {
-  OptimisticMemoized50MapWithSmallReadBenchmark()
-      : super('optimisticMemoized50');
+class OptMemo50MapWithSmallReadBenchmark extends MapWithSmallReadBenchmark {
+  OptMemo50MapWithSmallReadBenchmark() : super('optimisticMemoized50');
 
   run() => Data.work(data.optMemoColumn.map(data.f), data.size ~/ 2);
 }
 
-class PessimisticMemoized50MapWithSmallReadBenchmark
-    extends MapWithSmallReadBenchmark {
-  PessimisticMemoized50MapWithSmallReadBenchmark()
-      : super('pessimisticMemoized50');
+class PesMemo50MapWithSmallReadBenchmark extends MapWithSmallReadBenchmark {
+  PesMemo50MapWithSmallReadBenchmark() : super('pessimisticMemoized50');
 
   run() => Data.work(data.pesMemoColumn.map(data.f), data.size ~/ 2);
 }
@@ -112,17 +101,14 @@ class Eval0MapWithSmallReadBenchmark extends MapWithSmallReadBenchmark {
   run() => data.evalColumn.map(data.f);
 }
 
-class OptimisticMemoized0MapWithSmallReadBenchmark
-    extends MapWithSmallReadBenchmark {
-  OptimisticMemoized0MapWithSmallReadBenchmark() : super('optimisticMemoized0');
+class OptMemo0MapWithSmallReadBenchmark extends MapWithSmallReadBenchmark {
+  OptMemo0MapWithSmallReadBenchmark() : super('optimisticMemoized0');
 
   run() => data.optMemoColumn.map(data.f);
 }
 
-class PessimisticMemoized0MapWithSmallReadBenchmark
-    extends MapWithSmallReadBenchmark {
-  PessimisticMemoized0MapWithSmallReadBenchmark()
-      : super('pessimisticMemoized0');
+class PesMemo0MapWithSmallReadBenchmark extends MapWithSmallReadBenchmark {
+  PesMemo0MapWithSmallReadBenchmark() : super('pessimisticMemoized0');
 
   run() => data.pesMemoColumn.map(data.f);
 }
@@ -149,14 +135,14 @@ class EvalColumnMapBenchmark extends ColumnMapBenchmark {
   run() => Data.work(data.evalColumn.map(data.f), data.size);
 }
 
-class OptimisticMemoizedColumnMapBenchmark extends ColumnMapBenchmark {
-  OptimisticMemoizedColumnMapBenchmark() : super('optimisticMemoized');
+class OptMemoColumnMapBenchmark extends ColumnMapBenchmark {
+  OptMemoColumnMapBenchmark() : super('optimisticMemoized');
 
   run() => Data.work(data.optMemoColumn.map(data.f), data.size);
 }
 
-class PessimisticMemoizedColumnMapBenchmark extends ColumnMapBenchmark {
-  PessimisticMemoizedColumnMapBenchmark() : super('pessimisticMemoized');
+class PesMemoColumnMapBenchmark extends ColumnMapBenchmark {
+  PesMemoColumnMapBenchmark() : super('pessimisticMemoized');
 
   run() => Data.work(data.pesMemoColumn.map(data.f), data.size);
 }
@@ -197,8 +183,8 @@ class EvalManyReadBenchmark extends ManyReadBenchmark {
   }
 }
 
-class OptimisticMemoizedManyReadBenchmark extends ManyReadBenchmark {
-  OptimisticMemoizedManyReadBenchmark() : super('optimisticMemoized');
+class OptMemoManyReadBenchmark extends ManyReadBenchmark {
+  OptMemoManyReadBenchmark() : super('optimisticMemoized');
 
   run() {
     var col = data.optMemoColumn.map(data.f);
@@ -210,8 +196,8 @@ class OptimisticMemoizedManyReadBenchmark extends ManyReadBenchmark {
   }
 }
 
-class PessimisticMemoizedManyReadBenchmark extends ManyReadBenchmark {
-  PessimisticMemoizedManyReadBenchmark() : super('pessimisticMemoized');
+class PesMemoManyReadBenchmark extends ManyReadBenchmark {
+  PesMemoManyReadBenchmark() : super('pessimisticMemoized');
 
   run() {
     var col = data.pesMemoColumn.map(data.f);
@@ -299,30 +285,30 @@ class MapData extends Data {
 main() {
   new Dense10MapWithSmallReadBenchmark().report();
   new Eval10MapWithSmallReadBenchmark().report();
-  new OptimisticMemoized10MapWithSmallReadBenchmark().report();
-  new PessimisticMemoized10MapWithSmallReadBenchmark().report();
+  new OptMemo10MapWithSmallReadBenchmark().report();
+  new PesMemo10MapWithSmallReadBenchmark().report();
   new Dense1MapWithSmallReadBenchmark().report();
   new Eval1MapWithSmallReadBenchmark().report();
-  new OptimisticMemoized1MapWithSmallReadBenchmark().report();
-  new PessimisticMemoized1MapWithSmallReadBenchmark().report();
+  new OptMemo1MapWithSmallReadBenchmark().report();
+  new PesMemo1MapWithSmallReadBenchmark().report();
   new Dense50MapWithSmallReadBenchmark().report();
   new Eval50MapWithSmallReadBenchmark().report();
-  new OptimisticMemoized50MapWithSmallReadBenchmark().report();
-  new PessimisticMemoized50MapWithSmallReadBenchmark().report();
+  new OptMemo50MapWithSmallReadBenchmark().report();
+  new PesMemo50MapWithSmallReadBenchmark().report();
   new Dense0MapWithSmallReadBenchmark().report();
   new Eval0MapWithSmallReadBenchmark().report();
-  new OptimisticMemoized0MapWithSmallReadBenchmark().report();
-  new PessimisticMemoized0MapWithSmallReadBenchmark().report();
+  new OptMemo0MapWithSmallReadBenchmark().report();
+  new PesMemo0MapWithSmallReadBenchmark().report();
 
   new DenseColumnMapBenchmark().report();
   new EvalColumnMapBenchmark().report();
-  new OptimisticMemoizedColumnMapBenchmark().report();
-  new PessimisticMemoizedColumnMapBenchmark().report();
+  new OptMemoColumnMapBenchmark().report();
+  new PesMemoColumnMapBenchmark().report();
 
   new DenseManyReadBenchmark().report();
   new EvalManyReadBenchmark().report();
-  new OptimisticMemoizedManyReadBenchmark().report();
-  new PessimisticMemoizedManyReadBenchmark().report();
+  new OptMemoManyReadBenchmark().report();
+  new PesMemoManyReadBenchmark().report();
 
   new Dense5ManyMapBenchmark().report();
   new Dense10ManyMapBenchmark().report();
