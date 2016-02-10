@@ -5,20 +5,20 @@ import 'package:benchmark_harness/benchmark_harness.dart';
 
 import 'data.dart';
 
-class DenseColumnMapBenchmark extends BenchmarkBase {
-  const DenseColumnMapBenchmark() : super("DenseColumnMap");
+abstract class DenseColumnMapBenchmark extends BenchmarkBase {
+  DoubleData data;
 
-  static void main() {
-    new DenseColumnMapBenchmark().report();
+  DenseColumnMapBenchmark(String name) : super(name);
+
+  void setup() {
+    data = new DoubleData();
   }
+}
 
-  void setup() {}
+class SquareListBenchmark extends DenseColumnMapBenchmark {
+  SquareListBenchmark() : super('SquareList');
 
-  void teardown() {}
-
-  void run() {}
-
-  squareArray(DoubleData data) {
+  void run() {
     var xs = data.data;
     var ys = new List<double>(xs.length);
     var i = 0;
@@ -29,8 +29,12 @@ class DenseColumnMapBenchmark extends BenchmarkBase {
     }
     return ys;
   }
+}
 
-  squareMaskedArray(DoubleData data) {
+class SquareMaskedListBenchmark extends DenseColumnMapBenchmark {
+  SquareMaskedListBenchmark() : super('SquareMaskedList');
+
+  void run() {
     var xs = data.data;
     var ys = new List<double>(xs.length);
     var i = 0;
@@ -43,10 +47,20 @@ class DenseColumnMapBenchmark extends BenchmarkBase {
     }
     return ys;
   }
+}
 
-  squareColumn(DoubleData data) => data.col.map((x) => x * x);
+class SquareColumnBenchmark extends DenseColumnMapBenchmark {
+  SquareColumnBenchmark() : super('SquareColumn');
 
-  squareBitSetMaskedArray(DoubleData data) {
+  void run() {
+    data.col.map((x) => x * x);
+  }
+}
+
+class SquareBitSetMaskedListBenchmark extends DenseColumnMapBenchmark {
+  SquareBitSetMaskedListBenchmark() : super('SquareBitSetMaskedList');
+
+  void run() {
     var xs = data.data;
     var ys = new List<double>(xs.length);
     var i = 0;
@@ -81,5 +95,8 @@ class DoubleData {
 }
 
 main() {
-  DenseColumnMapBenchmark.main();
+  new SquareListBenchmark().report();
+  new SquareMaskedListBenchmark().report();
+  new SquareColumnBenchmark().report();
+  new SquareBitSetMaskedListBenchmark().report();
 }

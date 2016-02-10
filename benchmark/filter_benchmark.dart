@@ -4,30 +4,38 @@ import 'package:quiver/iterables.dart' show range;
 
 import 'data.dart';
 
-class ColumnFilterBenchmark extends BenchmarkBase {
-  const ColumnFilterBenchmark() : super("ColumnFilterBenchmark");
+abstract class ColumnFilterBenchmark extends BenchmarkBase {
+  FilterData data;
 
-  static void main() {
-    new ColumnFilterBenchmark().report();
+  ColumnFilterBenchmark(String name) : super("ColumnFilterBenchmark.$name");
+
+  void setup() {
+    data = new FilterData();
   }
+}
 
-  void run() {}
+class DenseColumnFilterBenchmark extends ColumnFilterBenchmark {
+  DenseColumnFilterBenchmark() : super('dense');
 
-  void setup() {}
+  run() => Data.work(data.denseColumn.filter(data.p), data.size);
+}
 
-  void teardown() {}
+class EvalColumnFilterBenchmark extends ColumnFilterBenchmark {
+  EvalColumnFilterBenchmark() : super('eval');
 
-  int dense(FilterData data) =>
-      Data.work(data.denseColumn.filter(data.p), data.size);
+  run() => Data.work(data.evalColumn.filter(data.p), data.size);
+}
 
-  int eval(FilterData data) =>
-      Data.work(data.evalColumn.filter(data.p), data.size);
+class OptimisticMemoizedColumnFilterBenchmark extends ColumnFilterBenchmark {
+  OptimisticMemoizedColumnFilterBenchmark() : super('optimisticMemoized');
 
-  int optimisticMemoized(FilterData data) =>
-      Data.work(data.optMemoColumn.filter(data.p), data.size);
+  run() => Data.work(data.optMemoColumn.filter(data.p), data.size);
+}
 
-  int pessimisticMemoized(FilterData data) =>
-      Data.work(data.pesMemoColumn.filter(data.p), data.size);
+class PessimisticMemoizedColumnFilterBenchmark extends ColumnFilterBenchmark {
+  PessimisticMemoizedColumnFilterBenchmark() : super('pessimisticMemoized');
+
+  run() => Data.work(data.pesMemoColumn.filter(data.p), data.size);
 }
 
 class FilterData extends Data {
@@ -44,5 +52,8 @@ class FilterData extends Data {
 }
 
 main() {
-  ColumnFilterBenchmark.main();
+  new DenseColumnFilterBenchmark().report();
+  new EvalColumnFilterBenchmark().report();
+  new OptimisticMemoizedColumnFilterBenchmark().report();
+  new PessimisticMemoizedColumnFilterBenchmark().report();
 }
