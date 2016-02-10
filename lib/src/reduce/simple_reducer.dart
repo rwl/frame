@@ -21,8 +21,8 @@ abstract class SimpleReducer<A extends ClassTag, B> extends Reducer<A, B> {
     var bldr = <A>[];
     var success =
         column.forEach(start, end, (i) => indices[i], (_, a) => bldr.add(a));
-    return success ? reduce(bldr.result()) : NM;
+    return success ? _reduce(bldr.result()) : NM;
   }
 
-  Cell<B> reduce(List<A> data);
+  Cell<B> _reduce(List<A> data);
 }
